@@ -72,7 +72,7 @@ func (g *game) addFood() {
 		n := rand.Int()%(len(g.ground)-2) + 1
 		m := rand.Int()%(len(g.ground[0])-2) + 1
 		if g.ground[n][m] == " " {
-			g.ground[n][m] = "$"
+			g.ground[n][m] = "+"
 			g.food.pos.y = uint16(n)
 			g.food.pos.x = uint16(m)
 			return
@@ -85,7 +85,6 @@ func main() {
 	g := new(game)
 	log.SetPrefix("goSnake: ")
 
-	// save cursor position
 	os.Stdin.Write([]byte{27, 55})
 
 	// hide cursor
@@ -153,37 +152,20 @@ func main() {
 		log.Println(err)
 	}
 	g.w = uint16(tmp)
-	tick := time.Tick(100 * time.Millisecond)
 
 	// start game
 	g.initialize()
 	go g.processInput()
 	for {
-		g.printGround()
 		g.updateGround()
-		<-tick
+		g.printGround()
+		time.Sleep(500 * time.Millisecond)
 		g.restoreCursor()
 	}
 }
 
 // TODO make more responsive
 func (g *game) updateGround() {
-	if g.food.pos == g.s[0].pos {
-		g.addFood()
-		b := new(block)
-		b.pos = g.s[len(g.s)-1].pos
-		switch b.dir = g.s[len(g.s)-1].dir; b.dir {
-		case up:
-			b.pos.y += 1
-		case right:
-			b.pos.x -= 1
-		case down:
-			b.pos.y -= 1
-		case left:
-			b.pos.x += 1
-		}
-		g.s = append(g.s, *b)
-	}
 	select {
 	case in := <-g.input:
 		g.s[0].dir = in
@@ -202,11 +184,28 @@ func (g *game) updateGround() {
 		} else if g.s[i].dir == left {
 			g.s[i].pos.x -= 1
 		}
-		g.ground[g.s[i].pos.y][g.s[i].pos.x] = "#"
+		g.ground[g.s[i].pos.y][g.s[i].pos.x] = "="
 		if i != 0 {
 			g.s[i].pdir = g.s[i].dir
 			g.s[i].dir = g.s[i-1].pdir
 		}
+	}
+	if g.food.pos == g.s[0].pos {
+		g.addFood()
+		b := new(block)
+		b.pos = g.s[len(g.s)-1].pos
+		switch b.dir = g.s[len(g.s)-1].dir; b.dir {
+		case up:
+			b.pos.y += 1
+		case right:
+			b.pos.x -= 1
+		case down:
+			b.pos.y -= 1
+		case left:
+			b.pos.x += 1
+		}
+		g.s = append(g.s, *b)
+		g.ground[b.pos.y][b.pos.x] = "="
 	}
 }
 

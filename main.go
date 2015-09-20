@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -23,17 +24,16 @@ type game struct {
 	s         snake
 	input     chan uint16
 	food      block
-	init      int
+	init      uint16
 }
 
 func (g *game) initialize() {
-	g.input = make(chan uint16, 2)
-	g.init = 5
+	g.input = make(chan uint16)
 	g.s = make([]block, 1)
 	g.s[0].dir = left
 	g.s[0].pdir = left
 	g.s[0].pos.x, g.s[0].pos.y = g.w-uint16(g.init)-2, g.h/2
-	for i := g.init; i > 0; i-- {
+	for i := g.init - 1; i > 0; i-- {
 		b := new(block)
 		b.pos = g.s[len(g.s)-1].pos
 		switch b.dir = g.s[len(g.s)-1].dir; b.dir {
@@ -69,6 +69,7 @@ func (g *game) initialize() {
 
 func (g *game) addFood() {
 	for {
+		rand.Seed(time.Now().UnixNano())
 		n := rand.Int()%(len(g.ground)-2) + 1
 		m := rand.Int()%(len(g.ground[0])-2) + 1
 		if g.ground[n][m] == " " {
@@ -84,7 +85,21 @@ func (g *game) addFood() {
 func main() {
 	g := new(game)
 	log.SetPrefix("goSnake: ")
+	log.SetFlags(0)
+	tmph := flag.Uint("h", 0, "height of playground")
+	tmpw := flag.Uint("w", 0, "width of playground")
+	tmpi := flag.Uint("i", 1, "initital size of snake")
+	flag.Parse()
 
+	g.h = uint16(*tmph)
+	g.w = uint16(*tmpw)
+	g.init = uint16(*tmpi)
+
+	if g.init == 0 {
+		log.Fatal("initial size of snake cannot be 0")
+	}
+
+	// save cursor pos
 	os.Stdin.Write([]byte{27, 55})
 
 	// hide cursor
@@ -119,7 +134,20 @@ func main() {
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), syscall.TIOCSETA, uintptr(unsafe.Pointer(&raw)), 0, 0, 0); err != 0 {
 		log.Fatal(err)
 	}
+	g.setDimensions()
 
+	// start game
+	g.initialize()
+	go g.processInput()
+	for {
+		g.printGround()
+		time.Sleep(100 * time.Millisecond)
+		g.updateGround()
+		g.restoreCursor()
+	}
+}
+
+func (g *game) setDimensions() {
 	// get cursor position
 	os.Stdin.Write([]byte{27, 91, 54, 110})
 	r := bufio.NewReader(os.Stdin)
@@ -139,28 +167,14 @@ func main() {
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(os.Stdin.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dimensions)), 0, 0, 0); err != 0 {
 		log.Fatal(err)
 	}
-	tmp, err := strconv.ParseUint(os.Args[1], 10, 16)
-	if err != nil {
-		log.Println(err)
+	if g.h == 0 {
+		g.h = dimensions[0]
 	}
-	g.h = uint16(tmp)
+	if g.w == 0 {
+		g.w = dimensions[1]
+	}
 	if i := row + g.h; i > dimensions[0] {
 		g.rowOffSet = i - dimensions[0] - 1
-	}
-	tmp, err = strconv.ParseUint(os.Args[2], 10, 16)
-	if err != nil {
-		log.Println(err)
-	}
-	g.w = uint16(tmp)
-
-	// start game
-	g.initialize()
-	go g.processInput()
-	for {
-		g.updateGround()
-		g.printGround()
-		time.Sleep(500 * time.Millisecond)
-		g.restoreCursor()
 	}
 }
 
@@ -191,10 +205,9 @@ func (g *game) updateGround() {
 		}
 	}
 	if g.food.pos == g.s[0].pos {
-		g.addFood()
 		b := new(block)
 		b.pos = g.s[len(g.s)-1].pos
-		switch b.dir = g.s[len(g.s)-1].dir; b.dir {
+		switch b.dir = g.s[len(g.s)-1].pdir; b.dir {
 		case up:
 			b.pos.y += 1
 		case right:
@@ -206,6 +219,7 @@ func (g *game) updateGround() {
 		}
 		g.s = append(g.s, *b)
 		g.ground[b.pos.y][b.pos.x] = "="
+		g.addFood()
 	}
 }
 

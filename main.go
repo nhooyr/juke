@@ -16,72 +16,43 @@ import (
 )
 
 type game struct {
-	ground    [][]string
 	h         uint16
 	w         uint16
 	rowOffSet uint16
 	sigs      chan os.Signal
 	s         snake
-	input     chan uint16
-	food      block
+	food      position
 	init      uint16
+	origin    position
+	speed     time.Duration
 }
 
 func (g *game) initialize() {
-	g.input = make(chan uint16)
-	g.s = make([]block, 1)
-	g.s[0].dir = left
-	g.s[0].pdir = left
-	g.s[0].pos.x, g.s[0].pos.y = g.w-uint16(g.init)-2, g.h/2
-	for i := g.init - 1; i > 0; i-- {
-		b := new(block)
-		b.pos = g.s[len(g.s)-1].pos
-		switch b.dir = g.s[len(g.s)-1].dir; b.dir {
-		case up:
-			b.pos.y += 1
-		case right:
-			b.pos.x -= 1
-		case down:
-			b.pos.y -= 1
-		case left:
-			b.pos.x += 1
-		}
-		g.s = append(g.s, *b)
-		g.s[len(g.s)-1].pdir = left
-	}
-	g.ground = make([][]string, g.h)
-	for i := 0; i < len(g.ground); i++ {
-		g.ground[i] = make([]string, g.w)
-		for j := 0; j < len(g.ground[i]); j++ {
-			if (i == len(g.ground)-1 || i == 0) && (j == 0 || j == len(g.ground[i])-1) {
-				g.ground[i][j] = "┼"
-			} else if i == len(g.ground)-1 || i == 0 {
-				g.ground[i][j] = "─"
-			} else if j == 0 || j == len(g.ground[i])-1 {
-				g.ground[i][j] = "│"
-			} else {
-				g.ground[i][j] = " "
-			}
-		}
-	}
+	g.s.g = g
+	g.s.initialize()
 	g.addFood()
 }
 
-func (g *game) addFood() {
-	for {
-		rand.Seed(time.Now().UnixNano())
-		n := rand.Int()%(len(g.ground)-2) + 1
-		m := rand.Int()%(len(g.ground[0])-2) + 1
-		if g.ground[n][m] == " " {
-			g.ground[n][m] = "+"
-			g.food.pos.y = uint16(n)
-			g.food.pos.x = uint16(m)
-			return
+func (g *game) getValidFoodPos() (vp []position) {
+	vp = []position{}
+	for i := uint16(1); i < g.h-1; i++ {
+		for j := uint16(1); j < g.w-1; j++ {
+			if g.s.isNotOn(position{i, j}) {
+				vp = append(vp, position{y: uint16(i), x: uint16(j)})
+			}
 		}
 	}
+	return
 }
 
-//TODO BREAK INTO SEPARATE METHODS AND LOOK AT tput cm
+func (g *game) addFood() {
+	vp := g.getValidFoodPos()
+	rand.Seed(time.Now().UnixNano())
+	g.food = vp[rand.Intn(len(vp))]
+	g.moveTo(g.food)
+	fmt.Print("+")
+}
+
 func main() {
 	g := new(game)
 	log.SetPrefix("goSnake: ")
@@ -89,18 +60,17 @@ func main() {
 	tmph := flag.Uint("h", 0, "height of playground")
 	tmpw := flag.Uint("w", 0, "width of playground")
 	tmpi := flag.Uint("i", 1, "initital size of snake")
+	tmps := flag.Int64("s", 10, "unit's per second for snake")
 	flag.Parse()
 
 	g.h = uint16(*tmph)
 	g.w = uint16(*tmpw)
 	g.init = uint16(*tmpi)
+	g.speed = time.Duration(*tmps)
 
 	if g.init == 0 {
 		log.Fatal("initial size of snake cannot be 0")
 	}
-
-	// save cursor pos
-	os.Stdin.Write([]byte{27, 55})
 
 	// hide cursor
 	os.Stdin.Write([]byte{27, 91, 63, 50, 53, 108})
@@ -110,7 +80,6 @@ func main() {
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), syscall.TIOCGETA, uintptr(unsafe.Pointer(&old)), 0, 0, 0); err != 0 {
 		log.Fatalln("not a terminal, got:", err)
 	}
-
 	// capture signals
 	g.sigs = make(chan os.Signal)
 	signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -127,7 +96,6 @@ func main() {
 
 		os.Exit(0)
 	}()
-
 	// set raw mode
 	raw := old
 	raw.Lflag &^= syscall.ECHO | syscall.ICANON
@@ -135,15 +103,27 @@ func main() {
 		log.Fatal(err)
 	}
 	g.setDimensions()
+	var maxInit uint16
+	if g.h < g.w {
+		maxInit = g.h/2 - 1
+	} else {
+		maxInit = g.w/2 - 1
+	}
+	if g.init > maxInit {
+		log.Println("init too big, max init size for this h/w is", maxInit)
+		g.sigs <- syscall.SIGTERM
+		g.sigs <- syscall.SIGTERM
+	}
 
 	// start game
+	g.printGround()
 	g.initialize()
-	go g.processInput()
+	go g.s.processInput()
 	for {
-		g.printGround()
-		time.Sleep(100 * time.Millisecond)
-		g.updateGround()
-		g.restoreCursor()
+		g.s.print()
+		g.moveTo(position{g.h - 1, g.w - 1})
+		time.Sleep(time.Second / g.speed)
+		g.s.move()
 	}
 }
 
@@ -156,12 +136,15 @@ func (g *game) setDimensions() {
 		log.Fatal(err)
 	}
 	i := strings.Index(p, ";")
-	rowt, err := strconv.ParseUint(p[2:i], 10, 16)
+	row, err := strconv.ParseUint(p[2:i], 10, 16)
 	if err != nil {
 		log.Fatal(err)
 	}
-	row := uint16(rowt)
-
+	col, err := strconv.ParseUint(p[i+1:len(p)-1], 10, 16)
+	if err != nil {
+		log.Fatal(err)
+	}
+	g.origin = position{y: uint16(row), x: uint16(col)}
 	// get dimensions and check if offset needed
 	var dimensions [4]uint16
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(os.Stdin.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dimensions)), 0, 0, 0); err != 0 {
@@ -173,104 +156,38 @@ func (g *game) setDimensions() {
 	if g.w == 0 {
 		g.w = dimensions[1]
 	}
-	if i := row + g.h; i > dimensions[0] {
+	if i := uint16(row) + g.h; i > dimensions[0] {
 		g.rowOffSet = i - dimensions[0] - 1
-	}
-}
-
-// TODO make more responsive
-func (g *game) updateGround() {
-	select {
-	case in := <-g.input:
-		g.s[0].dir = in
-		g.s[0].pdir = in
-	default:
-		// no input
-	}
-	for i, _ := range g.s {
-		g.ground[g.s[i].pos.y][g.s[i].pos.x] = " "
-		if g.s[i].dir == up {
-			g.s[i].pos.y -= 1
-		} else if g.s[i].dir == right {
-			g.s[i].pos.x += 1
-		} else if g.s[i].dir == down {
-			g.s[i].pos.y += 1
-		} else if g.s[i].dir == left {
-			g.s[i].pos.x -= 1
-		}
-		g.ground[g.s[i].pos.y][g.s[i].pos.x] = "="
-		if i != 0 {
-			g.s[i].pdir = g.s[i].dir
-			g.s[i].dir = g.s[i-1].pdir
-		}
-	}
-	if g.food.pos == g.s[0].pos {
-		b := new(block)
-		b.pos = g.s[len(g.s)-1].pos
-		switch b.dir = g.s[len(g.s)-1].pdir; b.dir {
-		case up:
-			b.pos.y += 1
-		case right:
-			b.pos.x -= 1
-		case down:
-			b.pos.y -= 1
-		case left:
-			b.pos.x += 1
-		}
-		g.s = append(g.s, *b)
-		g.ground[b.pos.y][b.pos.x] = "="
-		g.addFood()
-	}
-}
-
-func (g *game) processInput() {
-	b := make([]byte, 3)
-	var prevIn byte
-	for {
-		_, err := os.Stdin.Read(b)
-		if err != nil {
-			log.Print(err)
-			g.sigs <- syscall.SIGTERM
-		}
-		if b[0] == 27 && b[1] == 91 {
-			if b[2] == prevIn {
-				continue
-			}
-			if b[2] == 65 {
-				g.input <- up
-				prevIn = 65
-			} else if b[2] == 67 {
-				g.input <- right
-				prevIn = 67
-			} else if b[2] == 66 {
-				g.input <- down
-				prevIn = 66
-			} else if b[2] == 68 {
-				g.input <- left
-				prevIn = 68
-			}
-		}
-	}
-}
-
-// restore cursor position
-func (g *game) restoreCursor() {
-	os.Stdin.Write([]byte{27, 56})
-	if g.rowOffSet != 0 {
-		for i := uint16(0); i < g.rowOffSet; i++ {
-			os.Stdin.Write([]byte{27, 77})
-		}
 	}
 }
 
 // print current ground
 func (g *game) printGround() {
-	for i := 0; i < len(g.ground); i++ {
-		for j := 0; j < len(g.ground[i]); j++ {
-			fmt.Print(g.ground[i][j])
+	g.moveTo(position{g.rowOffSet, 0})
+	for i := uint16(0); i < g.h; i++ {
+		for j := uint16(0); j < g.w; j++ {
+			switch {
+			case (i == g.h-1 || i == 0) && (j == 0 || j == g.w-1):
+				fmt.Print("┼")
+			case i == 0 || i == g.h-1:
+				fmt.Print("─")
+			case j == 0 || j == g.w-1:
+				fmt.Print("│")
+			default:
+				g.moveTo(position{i + g.rowOffSet, g.w - 1})
+			}
 		}
-		if i < len(g.ground)-1 {
+		if i < g.h-1 {
 			fmt.Print("\n")
 		}
 	}
+}
+
+func (g *game) moveTo(p position) {
+	esc := []byte{27, 91}
+	esc = append(esc, []byte(strconv.FormatUint(uint64(p.y+g.origin.y-g.rowOffSet), 10))...)
+	esc = append(esc, 59)
+	esc = append(esc, []byte(strconv.FormatUint(uint64(p.x+g.origin.x), 10))...)
+	esc = append(esc, 72)
+	os.Stdin.Write(esc)
 }

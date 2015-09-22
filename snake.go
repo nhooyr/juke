@@ -73,6 +73,15 @@ func (s *snake) move() {
 		if i != 0 {
 			s.bs[i].dir = s.bs[i-1].dir
 		}
+		if s.bs[i].pos.y == s.g.h-1 {
+			s.bs[i].pos.y = 1
+		} else if s.bs[i].pos.y == 0 {
+			s.bs[i].pos.y = s.g.h - 2
+		} else if s.bs[i].pos.x == s.g.w-1 {
+			s.bs[i].pos.x = 1
+		} else if s.bs[i].pos.x == 0 {
+			s.bs[i].pos.x = s.g.w - 2
+		}
 	}
 	if s.bs[0].pos == s.g.food {
 		s.appendBlock()

@@ -11,8 +11,8 @@ import (
 
 const (
 	up = 1 << iota
-	right
 	down
+	right
 	left
 )
 
@@ -51,7 +51,7 @@ func (s *snake) isNotOn(p position) bool {
 
 func (s *snake) move() {
 	s.g.moveTo(s.bs[len(s.bs)-1].pos)
-	fmt.Println(" ")
+	fmt.Print(" ")
 	select {
 	case dir := <-s.input:
 		s.bs[0].dir = dir
@@ -73,13 +73,14 @@ func (s *snake) move() {
 		if i != 0 {
 			s.bs[i].dir = s.bs[i-1].dir
 		}
-		if s.bs[i].pos.y == s.g.h-1 {
+		switch {
+		case s.bs[i].pos.y == s.g.h-1:
 			s.bs[i].pos.y = 1
-		} else if s.bs[i].pos.y == 0 {
+		case s.bs[i].pos.y == 0:
 			s.bs[i].pos.y = s.g.h - 2
-		} else if s.bs[i].pos.x == s.g.w-1 {
+		case s.bs[i].pos.x == s.g.w-1:
 			s.bs[i].pos.x = 1
-		} else if s.bs[i].pos.x == 0 {
+		case s.bs[i].pos.x == 0:
 			s.bs[i].pos.x = s.g.w - 2
 		}
 	}
@@ -92,7 +93,7 @@ func (s *snake) move() {
 // process the input
 func (s *snake) processInput() {
 	b := make([]byte, 3)
-	var prevIn byte
+	var prevDir uint16
 	for {
 		_, err := os.Stdin.Read(b)
 		if err != nil {
@@ -100,22 +101,14 @@ func (s *snake) processInput() {
 			s.g.sigs <- syscall.SIGTERM
 		}
 		if b[0] == 27 && b[1] == 91 {
-			if b[2] == prevIn {
+			dir := uint16(1 << (b[2] - 65))
+			if dir == prevDir {
 				continue
 			}
-			switch b[2] {
-			case 65:
-				s.input <- up
-				prevIn = 65
-			case 67:
-				s.input <- right
-				prevIn = 67
-			case 66:
-				s.input <- down
-				prevIn = 66
-			case 68:
-				s.input <- left
-				prevIn = 68
+			switch dir {
+			case up, down, right, left:
+				s.input <- dir
+				prevDir = dir
 			}
 		}
 	}

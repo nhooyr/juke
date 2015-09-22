@@ -38,7 +38,7 @@ func (g *game) getValidFoodPos() (vp []position) {
 	for i := uint16(1); i < g.h-1; i++ {
 		for j := uint16(1); j < g.w-1; j++ {
 			if g.s.isNotOn(position{i, j}) {
-				vp = append(vp, position{y: uint16(i), x: uint16(j)})
+				vp = append(vp, position{y: i, x: j})
 			}
 		}
 	}
@@ -60,7 +60,7 @@ func main() {
 	tmph := flag.Uint("h", 0, "height of playground")
 	tmpw := flag.Uint("w", 0, "width of playground")
 	tmpi := flag.Uint("i", 1, "initital size of snake")
-	tmps := flag.Int64("s", 10, "unit's per second for snake")
+	tmps := flag.Int64("s", 20, "unit's per second for snake")
 	flag.Parse()
 
 	g.h = uint16(*tmph)

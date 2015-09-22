@@ -30,7 +30,6 @@ type snake struct {
 	bs      []block
 	g       *game
 	input   chan uint16
-	lastDir uint16
 }
 
 func (s *snake) print() {

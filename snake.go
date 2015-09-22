@@ -58,7 +58,10 @@ func (s *snake) move() {
 	default:
 		//
 	}
-	s.lastDir = s.bs[len(s.bs)-1].dir
+	if s.bs[0].pos == s.g.food {
+		s.appendBlock()
+		s.g.addFood()
+	}
 	for i := len(s.bs) - 1; i >= 0; i-- {
 		switch s.bs[i].dir {
 		case up:
@@ -83,10 +86,6 @@ func (s *snake) move() {
 		case s.bs[i].pos.x == 0:
 			s.bs[i].pos.x = s.g.w - 2
 		}
-	}
-	if s.bs[0].pos == s.g.food {
-		s.appendBlock()
-		s.g.addFood()
 	}
 }
 
@@ -116,7 +115,7 @@ func (s *snake) processInput() {
 
 func (s *snake) appendBlock() {
 	b := s.bs[len(s.bs)-1]
-	switch b.dir = s.lastDir; b.dir {
+	switch b.dir = s.bs[len(s.bs)-1].dir; b.dir {
 	case up:
 		b.pos.y += 1
 	case right:
@@ -135,7 +134,6 @@ func (s *snake) initialize() {
 	rand.Seed(time.Now().UnixNano())
 	s.bs[0].dir = 1 << uint16(rand.Int63n(3))
 	s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/2, s.g.h/2
-	s.lastDir = s.bs[0].dir
 	for i := s.g.init - 1; i > 0; i-- {
 		s.appendBlock()
 	}

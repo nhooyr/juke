@@ -18,16 +18,21 @@ type game struct {
 	w         uint16
 	rowOffSet uint16
 	sigs      chan os.Signal
-	s         snake
+	s         []snake
 	food      position
 	init      uint16
 	origin    position
 	speed     time.Duration
+	players   uint
 }
 
 func (g *game) initialize() {
-	g.s.g = g
-	g.s.initialize()
+	g.printGround()
+	g.s = make([]snake, g.players)
+	for i := uint(0); i < g.players; i++ {
+		g.s[i].g = g
+		g.s[i].initialize(i+1)
+	}
 	g.addFood()
 }
 
@@ -35,7 +40,10 @@ func (g *game) getValidFoodPos() (vp []position) {
 	vp = []position{}
 	for i := uint16(1); i < g.h-1; i++ {
 		for j := uint16(1); j < g.w-1; j++ {
-			if g.s.isNotOn(position{i, j}) {
+			for s := uint(0); s < g.players; s++ {
+				if g.s[s].on(position{i, j}) {
+					break
+				}
 				vp = append(vp, position{y: i, x: j})
 			}
 		}
@@ -114,4 +122,40 @@ func (g *game) moveTo(p position) {
 	esc = append(esc, []byte(strconv.FormatUint(uint64(p.x+g.origin.x), 10))...)
 	esc = append(esc, 72)
 	os.Stdin.Write(esc)
+}
+
+// process the input
+func (s *snake) processInput() {
+	b := make([]byte, 3)
+	var prevDir uint16
+	for {
+		_, err := os.Stdin.Read(b)
+		if err != nil {
+			log.Print(err)
+			s.g.sigs <- syscall.SIGTERM
+		}
+		if b[0] == 27 && b[1] == 91 {
+			dir := uint16(1 << (b[2] - 65))
+			if dir == prevDir {
+				continue
+			}
+			switch dir {
+			case up, down, right, left:
+				s.input <- dir
+				prevDir = dir
+			}
+		}
+	}
+}
+
+func (g *game) printSnakes() {
+	for i := uint(0); i < g.players; i++ {
+		g.s[i].print()
+	}
+}
+
+func (g *game) moveSnakes() {
+	for i := uint(0); i < g.players; i++ {
+		g.s[i].move()
+	}
 }

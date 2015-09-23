@@ -16,18 +16,20 @@ func main() {
 	log.SetFlags(0)
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")
 	tmpw := flag.Uint("w", 0, "width of playground, (default width of tty)")
-	tmpi := flag.Uint("i", 1, "initital size of snake")
+	tmpi := flag.Uint("i", 3, "initital size of snake")
 	tmps := flag.Int64("s", 20, "unit's per second for snake")
+	flag.UintVar(&g.players, "p", 1, "number of players (controls: P1: arrows, P2: wasd, P3: yghj, P4: pl;')")
 	flag.Parse()
-
+	if g.players > 4 {
+		log.Fatal("cannot be more than 4 players")
+	}
 	g.h = uint16(*tmph)
 	g.w = uint16(*tmpw)
 	g.init = uint16(*tmpi)
-	g.speed = time.Duration(*tmps)
-
 	if g.init == 0 {
 		log.Fatal("initial size of snake cannot be 0")
 	}
+	g.speed = time.Duration(*tmps)
 
 	// hide cursor
 	os.Stdin.Write([]byte{27, 91, 63, 50, 53, 108})
@@ -64,24 +66,21 @@ func main() {
 
 	var maxInit uint16
 	if g.h < g.w {
-		maxInit = g.h/2 - 1
+		maxInit = g.h/uint16((g.players)) - 1
 	} else {
-		maxInit = g.w/2 - 1
+		maxInit = g.w/uint16((g.players)) - 1
 	}
 	if g.init > maxInit {
 		log.Println("init too big, max init size for this h/w is", maxInit)
 		cleanup()
 		os.Exit(0)
 	}
-
 	// start game
-	g.printGround()
 	g.initialize()
-	go g.s.processInput()
 	for {
-		g.s.print()
+		g.printSnakes()
 		g.moveTo(position{g.h - 1, g.w - 1})
 		time.Sleep(time.Second / g.speed)
-		g.s.move()
+		g.moveSnakes()
 	}
 }

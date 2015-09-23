@@ -2,10 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
-	"os"
-	"syscall"
 	"time"
 )
 
@@ -27,9 +24,9 @@ type block struct {
 }
 
 type snake struct {
-	bs      []block
-	g       *game
-	input   chan uint16
+	bs    []block
+	g     *game
+	input chan uint16
 }
 
 func (s *snake) print() {
@@ -39,13 +36,13 @@ func (s *snake) print() {
 	}
 }
 
-func (s *snake) isNotOn(p position) bool {
+func (s *snake) on(p position) bool {
 	for i, _ := range s.bs {
 		if s.bs[i].pos == p {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 func (s *snake) move() {
@@ -88,30 +85,6 @@ func (s *snake) move() {
 	}
 }
 
-// process the input
-func (s *snake) processInput() {
-	b := make([]byte, 3)
-	var prevDir uint16
-	for {
-		_, err := os.Stdin.Read(b)
-		if err != nil {
-			log.Print(err)
-			s.g.sigs <- syscall.SIGTERM
-		}
-		if b[0] == 27 && b[1] == 91 {
-			dir := uint16(1 << (b[2] - 65))
-			if dir == prevDir {
-				continue
-			}
-			switch dir {
-			case up, down, right, left:
-				s.input <- dir
-				prevDir = dir
-			}
-		}
-	}
-}
-
 func (s *snake) appendBlock() {
 	b := s.bs[len(s.bs)-1]
 	switch b.dir = s.bs[len(s.bs)-1].dir; b.dir {
@@ -127,12 +100,42 @@ func (s *snake) appendBlock() {
 	s.bs = append(s.bs, b)
 }
 
-func (s *snake) initialize() {
+func (s *snake) initialize(player uint) {
 	s.input = make(chan uint16)
 	s.bs = make([]block, 1)
 	rand.Seed(time.Now().UnixNano())
 	s.bs[0].dir = 1 << uint16(rand.Int63n(3))
-	s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/2, s.g.h/2
+	switch player {
+	case 1:
+		switch s.g.players {
+		case 1:
+			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/2, s.g.h/2
+		case 2:
+			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/2
+		case 3:
+			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/4, s.g.h/2
+		case 4:
+			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3
+		}
+	case 2:
+		switch s.g.players {
+		case 2:
+			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/2
+		case 3:
+			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/4*2, s.g.h/2
+		case 4:
+			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3
+		}
+	case 3:
+		switch s.g.players {
+		case 3:
+			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/4*3, s.g.h/2
+		case 4:
+			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3*2
+		}
+	case 4:
+		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3*2
+	}
 	for i := s.g.init - 1; i > 0; i-- {
 		s.appendBlock()
 	}

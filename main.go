@@ -18,7 +18,7 @@ func main() {
 	tmpw := flag.Uint("w", 0, "width of playground, (default width of tty)")
 	tmpi := flag.Uint("i", 3, "initital size of snake")
 	tmps := flag.Int64("s", 20, "unit's per second for snake")
-	flag.UintVar(&g.players, "p", 1, "number of players (controls: P1: arrows, P2: wasd, P3: yghj, P4: pl;')")
+	flag.UintVar(&g.players, "p", 1, "number of players; controls: P1: arrows, P2: wasd, P3: yghj, P4: pl;'")
 	flag.Parse()
 	if g.players > 4 {
 		log.Fatal("cannot be more than 4 players")
@@ -65,10 +65,10 @@ func main() {
 	g.setDimensions()
 
 	var maxInit uint16
-	if g.h < g.w {
-		maxInit = g.h/uint16((g.players)) - 1
+	if g.players == 1 {
+		maxInit = g.w/3 - 1
 	} else {
-		maxInit = g.w/uint16((g.players)) - 1
+		maxInit = g.w/3 - 1
 	}
 	if g.init > maxInit {
 		log.Println("init too big, max init size for this h/w is", maxInit)

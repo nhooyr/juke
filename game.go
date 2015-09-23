@@ -21,9 +21,9 @@ type game struct {
 	s         []snake
 	food      position
 	init      uint16
+	players   uint
 	origin    position
 	speed     time.Duration
-	players   uint
 }
 
 func (g *game) initialize() {
@@ -31,9 +31,10 @@ func (g *game) initialize() {
 	g.s = make([]snake, g.players)
 	for i := uint(0); i < g.players; i++ {
 		g.s[i].g = g
-		g.s[i].initialize(i+1)
+		g.s[i].initialize(i + 1)
 	}
 	g.addFood()
+	go g.processInput()
 }
 
 func (g *game) getValidFoodPos() (vp []position) {
@@ -125,24 +126,107 @@ func (g *game) moveTo(p position) {
 }
 
 // process the input
-func (s *snake) processInput() {
-	b := make([]byte, 3)
-	var prevDir uint16
-	for {
+func (g *game) processInput() {
+	b := make([]byte, 1)
+	var prevDir = make([]uint16, g.players)
+	read := func() {
 		_, err := os.Stdin.Read(b)
 		if err != nil {
-			log.Print(err)
-			s.g.sigs <- syscall.SIGTERM
+			panic(err)
 		}
-		if b[0] == 27 && b[1] == 91 {
-			dir := uint16(1 << (b[2] - 65))
-			if dir == prevDir {
-				continue
+	}
+	defer func() {
+		log.Println(recover())
+		g.sigs <- syscall.SIGTERM
+	}()
+	for {
+		read()
+		if b[0] == 27 && g.s[0].dead == false {
+			read()
+			if b[0] == 91 {
+				read()
+				// special trick to make things easier, 65 is up, 66 is down, 67 is right and 68 is left so if you subtract 65 and shift the bits in 1 by it you get the exact direction!
+				dir := uint16(1 << (b[0] - 65))
+				if dir == prevDir[0] {
+					continue
+				}
+				switch dir {
+				case up, down, right, left:
+					g.s[0].input <- dir
+					prevDir[0] = dir
+				}
 			}
-			switch dir {
-			case up, down, right, left:
-				s.input <- dir
-				prevDir = dir
+		}
+		if g.players > 1 && g.s[1].dead == false {
+			switch b[0] {
+			case 'w':
+				if prevDir[1] == up {
+					continue
+				}
+				g.s[1].input <- up
+			case 'd':
+				if prevDir[1] == right {
+					continue
+				}
+				g.s[1].input <- right
+			case 's':
+				if prevDir[1] == down {
+					continue
+				}
+				g.s[1].input <- down
+			case 'a':
+				if prevDir[1] == left {
+					continue
+				}
+				g.s[1].input <- left
+			}
+		}
+		if g.players > 2 && g.s[2].dead == false {
+			switch b[0] {
+			case 'y':
+				if prevDir[2] == up {
+					continue
+				}
+				g.s[2].input <- up
+			case 'j':
+				if prevDir[2] == right {
+					continue
+				}
+				g.s[2].input <- right
+			case 'h':
+				if prevDir[2] == down {
+					continue
+				}
+				g.s[2].input <- down
+			case 'g':
+				if prevDir[2] == left {
+					continue
+				}
+				g.s[2].input <- left
+			}
+		}
+		if g.players > 3 && g.s[3].dead == false {
+			switch b[0] {
+			case 'p':
+				if prevDir[3] == up {
+					continue
+				}
+				g.s[3].input <- up
+			case '\'':
+				if prevDir[3] == right {
+					continue
+				}
+				g.s[3].input <- right
+			case ';':
+				if prevDir[3] == down {
+					continue
+				}
+				g.s[3].input <- down
+			case 'l':
+				if prevDir[3] == left {
+					continue
+				}
+				g.s[3].input <- left
 			}
 		}
 	}
@@ -150,12 +234,26 @@ func (s *snake) processInput() {
 
 func (g *game) printSnakes() {
 	for i := uint(0); i < g.players; i++ {
-		g.s[i].print()
+		if g.s[i].dead == false {
+			g.s[i].print()
+		}
 	}
 }
 
 func (g *game) moveSnakes() {
 	for i := uint(0); i < g.players; i++ {
-		g.s[i].move()
+		if g.s[i].dead == false {
+			g.s[i].move()
+		}
+	}
+	for i, _ := range g.s {
+		if g.s[i].dead == true {
+			continue
+		}
+		for j, _ := range g.s {
+			if j != i && (g.s[j].on(g.s[i].bs[0].pos) || g.s[i].onExceptFirst(g.s[i].bs[0].pos)){
+				g.s[i].die()
+			}
+		}
 	}
 }

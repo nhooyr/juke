@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"math/rand"
-	"time"
-)
+import "fmt"
 
 const (
 	up = 1 << iota
@@ -25,14 +21,24 @@ type block struct {
 
 type snake struct {
 	bs    []block
+	oldBs []block
 	g     *game
 	input chan uint16
+	dead  bool
 }
 
 func (s *snake) print() {
 	for i, _ := range s.bs {
 		s.g.moveTo(s.bs[i].pos)
 		fmt.Print("=")
+	}
+}
+func (s *snake) die() {
+	s.dead = true
+	s.bs = s.oldBs
+	for i, _ := range s.bs {
+		s.g.moveTo(s.bs[i].pos)
+		fmt.Print("x")
 	}
 }
 
@@ -45,7 +51,18 @@ func (s *snake) on(p position) bool {
 	return false
 }
 
+func (s *snake) onExceptFirst(p position) bool {
+	for i := 1; i < len(s.bs)-1; i++ {
+		if s.bs[i].pos == p {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *snake) move() {
+	s.oldBs = make([]block, len(s.bs))
+	copy(s.oldBs, s.bs)
 	s.g.moveTo(s.bs[len(s.bs)-1].pos)
 	fmt.Print(" ")
 	select {
@@ -103,36 +120,14 @@ func (s *snake) appendBlock() {
 func (s *snake) initialize(player uint) {
 	s.input = make(chan uint16)
 	s.bs = make([]block, 1)
-	rand.Seed(time.Now().UnixNano())
-	s.bs[0].dir = 1 << uint16(rand.Int63n(3))
+	s.bs[0].dir = right
 	switch player {
 	case 1:
-		switch s.g.players {
-		case 1:
-			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/2, s.g.h/2
-		case 2:
-			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/2
-		case 3:
-			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/4, s.g.h/2
-		case 4:
-			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3
-		}
+		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3
 	case 2:
-		switch s.g.players {
-		case 2:
-			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/2
-		case 3:
-			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/4*2, s.g.h/2
-		case 4:
-			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3
-		}
+		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3
 	case 3:
-		switch s.g.players {
-		case 3:
-			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/4*3, s.g.h/2
-		case 4:
-			s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3*2
-		}
+		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3*2
 	case 4:
 		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3*2
 	}

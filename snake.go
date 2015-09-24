@@ -42,17 +42,8 @@ func (s *snake) die() {
 	}
 }
 
-func (s *snake) on(p position) bool {
-	for i, _ := range s.bs {
-		if s.bs[i].pos == p {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *snake) onExceptFirst(p position) bool {
-	for i := 1; i < len(s.bs)-1; i++ {
+func (s *snake) on(p position, start int) bool {
+	for i := start; i < len(s.bs)-1; i ++{
 		if s.bs[i].pos == p {
 			return true
 		}
@@ -70,10 +61,6 @@ func (s *snake) move() {
 		s.bs[0].dir = dir
 	default:
 		//
-	}
-	if s.bs[0].pos == s.g.food {
-		s.appendBlock()
-		s.g.addFood()
 	}
 	for i := len(s.bs) - 1; i >= 0; i-- {
 		switch s.bs[i].dir {

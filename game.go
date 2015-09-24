@@ -42,7 +42,7 @@ func (g *game) getValidFoodPos() (vp []position) {
 	for i := uint16(1); i < g.h-1; i++ {
 		for j := uint16(1); j < g.w-1; j++ {
 			for s := uint(0); s < g.players; s++ {
-				if g.s[s].on(position{i, j}) {
+				if g.s[s].on(position{i, j}, 0) {
 					break
 				}
 				vp = append(vp, position{y: i, x: j})
@@ -57,7 +57,7 @@ func (g *game) addFood() {
 	rand.Seed(time.Now().UnixNano())
 	g.food = vp[rand.Intn(len(vp))]
 	g.moveTo(g.food)
-	fmt.Print("+")
+	fmt.Print("A")
 }
 
 func (g *game) setDimensions() {
@@ -241,7 +241,11 @@ func (g *game) printSnakes() {
 }
 
 func (g *game) moveSnakes() {
-	for i := uint(0); i < g.players; i++ {
+	for i, _ := range g.s {
+		if g.s[i].bs[0].pos == g.food {
+			g.s[i].appendBlock()
+			g.addFood()
+		}
 		if g.s[i].dead == false {
 			g.s[i].move()
 		}
@@ -251,8 +255,11 @@ func (g *game) moveSnakes() {
 			continue
 		}
 		for j, _ := range g.s {
-			if j != i && (g.s[j].on(g.s[i].bs[0].pos) || g.s[i].onExceptFirst(g.s[i].bs[0].pos)){
-				g.s[i].die()
+			if j != i {
+				if (g.s[j].on(g.s[i].bs[0].pos, 0)) {
+					g.s[i].die()
+				}
+				// TODO weird with one size snake
 			}
 		}
 	}

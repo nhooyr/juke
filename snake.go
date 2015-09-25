@@ -1,6 +1,7 @@
 package main
 
 import "fmt"
+import "sync"
 
 const (
 	up = iota + 1
@@ -23,15 +24,17 @@ type snake struct {
 	bs    []block
 	oldBs []block
 	g     *game
-	input chan uint16
 	dead  bool
+	sync.Mutex
 }
 
 func (s *snake) print() {
+	s.Lock()
 	for i, _ := range s.bs {
 		s.g.moveTo(s.bs[i].pos)
 		fmt.Print("=")
 	}
+	s.Unlock()
 }
 func (s *snake) die() {
 	s.dead = true
@@ -52,16 +55,11 @@ func (s *snake) on(p position, start int) bool {
 }
 
 func (s *snake) move() {
+	s.Lock()
 	s.oldBs = make([]block, len(s.bs))
 	copy(s.oldBs, s.bs)
 	s.g.moveTo(s.bs[len(s.bs)-1].pos)
 	fmt.Print(" ")
-	select {
-	case dir := <-s.input:
-		s.bs[0].dir = dir
-	default:
-		//
-	}
 	for i := len(s.bs) - 1; i >= 0; i-- {
 		switch s.bs[i].dir {
 		case up:
@@ -76,23 +74,29 @@ func (s *snake) move() {
 		if i != 0 {
 			s.bs[i].dir = s.bs[i-1].dir
 		}
-		switch {
-		case s.bs[i].pos.y == s.g.h-1:
-			s.bs[i].pos.y = 1
-		case s.bs[i].pos.y == 0:
-			s.bs[i].pos.y = s.g.h - 2
-		case s.bs[i].pos.x == s.g.w-1:
-			s.bs[i].pos.x = 1
-		case s.bs[i].pos.x == 0:
-			s.bs[i].pos.x = s.g.w - 2
-		}
+		s.g.wallHax(&s.bs[i].pos)
+	}
+	s.Unlock()
+}
+
+func (g *game) wallHax(p *position) {
+	switch {
+	case p.y == g.h-1:
+		p.y = 1
+	case p.y == 0:
+		p.y = g.h - 2
+	case p.x == g.w-1:
+		p.x = 1
+	case p.x == 0:
+		p.x = g.w - 2
 	}
 }
 
-func (s *snake) appendBlock(i uint16) {
+func (s *snake) appendBlocks(i uint16) {
 	for j := uint16(0); j < i; j++ {
 		b := s.bs[len(s.bs)-1]
-		switch b.dir = s.bs[len(s.bs)-1].dir; b.dir {
+		b.dir = s.bs[len(s.bs)-1].dir
+		switch b.dir {
 		case up:
 			b.pos.y += 1
 		case right:
@@ -102,12 +106,12 @@ func (s *snake) appendBlock(i uint16) {
 		case left:
 			b.pos.x += 1
 		}
+		s.g.wallHax(&b.pos)
 		s.bs = append(s.bs, b)
 	}
 }
 
 func (s *snake) initialize(player uint) {
-	s.input = make(chan uint16)
 	s.bs = make([]block, 1)
 	s.bs[0].dir = right
 	switch player {
@@ -120,5 +124,5 @@ func (s *snake) initialize(player uint) {
 	case 4:
 		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3*2
 	}
-	s.appendBlock(s.g.init-1)
+	s.appendBlocks(s.g.init - 1)
 }

@@ -18,6 +18,7 @@ func main() {
 	tmpw := flag.Uint("w", 0, "width of playground, (default width of tty)")
 	tmpi := flag.Uint("i", 3, "initital size of snake")
 	tmps := flag.Int64("s", 20, "unit's per second for snake")
+	tmpf := flag.Int64("f", 4, "how many blocks each food adds")
 	flag.UintVar(&g.players, "p", 1, "number of players; controls: P1: arrows, P2: wasd, P3: yghj, P4: pl;'")
 	flag.Parse()
 	if g.players > 4 {
@@ -26,6 +27,7 @@ func main() {
 	g.h = uint16(*tmph)
 	g.w = uint16(*tmpw)
 	g.init = uint16(*tmpi)
+	g.foodVal = uint16(*tmpf)
 	if g.init == 0 {
 		log.Fatal("initial size of snake cannot be 0")
 	}

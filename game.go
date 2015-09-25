@@ -19,6 +19,7 @@ type game struct {
 	rowOffSet uint16
 	sigs      chan os.Signal
 	s         []snake
+	foodVal   uint16
 	food      []position
 	init      uint16
 	players   uint
@@ -144,11 +145,13 @@ func (g *game) processInput() {
 		log.Println(recover())
 		g.sigs <- syscall.SIGTERM
 	}()
-	send := func(s uint, dir uint16) {
+	changeDir := func(s uint, dir uint16) {
 		if g.players <= s || g.s[s].dead == true || prevDir[s] == dir {
 			return
 		}
-		g.s[s].input <- dir
+		g.s[s].Lock()
+		g.s[s].bs[0].dir = dir
+		g.s[s].Unlock()
 	}
 	for {
 		read()
@@ -159,35 +162,35 @@ func (g *game) processInput() {
 				dir := uint16(b[0] - 64)
 				switch dir {
 				case up, down, right, left:
-					send(0, dir)
+					changeDir(0, dir)
 				}
 			}
 		} else {
 			switch b[0] {
 			case 'w':
-				send(1, up)
+				changeDir(1, up)
 			case 'd':
-				send(1, right)
+				changeDir(1, right)
 			case 's':
-				send(1, down)
+				changeDir(1, down)
 			case 'a':
-				send(1, left)
+				changeDir(1, left)
 			case 'y':
-				send(2, up)
+				changeDir(2, up)
 			case 'j':
-				send(2, right)
+				changeDir(2, right)
 			case 'h':
-				send(2, down)
+				changeDir(2, down)
 			case 'g':
-				send(2, left)
+				changeDir(2, left)
 			case 'p':
-				send(3, up)
+				changeDir(3, up)
 			case '\'':
-				send(3, right)
+				changeDir(3, right)
 			case ';':
-				send(3, down)
+				changeDir(3, down)
 			case 'l':
-				send(3, left)
+				changeDir(3, left)
 			case 10:
 				return
 			}
@@ -210,7 +213,7 @@ func (g *game) moveSnakes() {
 	for i, _ := range g.s {
 		for j, _ := range g.food {
 			if g.s[i].bs[0].pos == g.food[j] {
-				g.s[i].appendBlock(uint16(1*g.players))
+				g.s[i].appendBlocks(g.foodVal)
 				g.addFood(j)
 			}
 		}

@@ -11,11 +11,11 @@ func printColor(i uint) {
 	case 0:
 		c = strconv.FormatUint(34, 10)
 	case 1:
-		c = strconv.FormatUint(35, 10)
+		c = strconv.FormatUint(32, 10)
 	case 2:
 		c = strconv.FormatUint(31, 10)
 	case 3:
-		c = strconv.FormatUint(32, 10)
+		c = strconv.FormatUint(35, 10)
 	}
 	esc := []byte{27, 91}
 	esc = append(esc, []byte(c)...)

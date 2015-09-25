@@ -46,7 +46,7 @@ func (s *snake) die() {
 }
 
 func (s *snake) on(p position, start int) bool {
-	for i := start; i < len(s.bs)-1; i++ {
+	for i := start; i < len(s.bs); i++ {
 		if s.bs[i].pos == p {
 			return true
 		}

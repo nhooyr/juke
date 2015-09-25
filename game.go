@@ -44,15 +44,16 @@ func (g *game) initialize() {
 func (g *game) getValidFoodPos() (vp []position) {
 	vp = []position{}
 	for i := uint16(1); i < g.h-1; i++ {
+	xLoop:
 		for j := uint16(1); j < g.w-1; j++ {
 			for s := uint(0); s < g.players; s++ {
 				for f := 0; uint(f) < g.players; f++ {
 					if g.food[f] == (position{i, j}) || g.s[s].on(position{i, j}, 0) {
-						break
+						continue xLoop
 					}
-					vp = append(vp, position{i, j})
 				}
 			}
+			vp = append(vp, position{i, j})
 		}
 	}
 	return

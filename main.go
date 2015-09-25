@@ -40,6 +40,7 @@ func main() {
 		log.Fatalln("not a terminal, got:", err)
 	}
 	cleanup := func() {
+		os.Stdout.Write([]byte{27, 91, 48, 109})
 		// make cursor visible
 		os.Stdin.Write([]byte{27, 91, 51, 52, 104, 27, 91, 63, 50, 53, 104})
 		// set tty to normal

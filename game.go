@@ -19,7 +19,7 @@ type game struct {
 	rowOffSet uint16
 	sigs      chan os.Signal
 	s         []snake
-	food      position
+	food      []position
 	init      uint16
 	players   uint
 	origin    position
@@ -33,7 +33,10 @@ func (g *game) initialize() {
 		g.s[i].g = g
 		g.s[i].initialize(i + 1)
 	}
-	g.addFood()
+	g.food = make([]position, g.players)
+	for i, _ := range g.food {
+		g.addFood(i)
+	}
 	go g.processInput()
 }
 
@@ -42,21 +45,23 @@ func (g *game) getValidFoodPos() (vp []position) {
 	for i := uint16(1); i < g.h-1; i++ {
 		for j := uint16(1); j < g.w-1; j++ {
 			for s := uint(0); s < g.players; s++ {
-				if g.s[s].on(position{i, j}, 0) {
-					break
+				for f := 0; uint(f) < g.players; f++ {
+					if g.food[f] == (position{i, j}) || g.s[s].on(position{i, j}, 0) {
+						break
+					}
+					vp = append(vp, position{i, j})
 				}
-				vp = append(vp, position{y: i, x: j})
 			}
 		}
 	}
 	return
 }
 
-func (g *game) addFood() {
+func (g *game) addFood(i int) {
 	vp := g.getValidFoodPos()
 	rand.Seed(time.Now().UnixNano())
-	g.food = vp[rand.Intn(len(vp))]
-	g.moveTo(g.food)
+	g.food[i] = vp[rand.Intn(len(vp))]
+	g.moveTo(g.food[i])
 	fmt.Print("A")
 }
 
@@ -139,95 +144,54 @@ func (g *game) processInput() {
 		log.Println(recover())
 		g.sigs <- syscall.SIGTERM
 	}()
+	send := func(s uint, dir uint16) {
+		if g.players <= s || g.s[s].dead == true || prevDir[s] == dir {
+			return
+		}
+		g.s[s].input <- dir
+	}
 	for {
 		read()
 		if b[0] == 27 && g.s[0].dead == false {
 			read()
 			if b[0] == 91 {
 				read()
-				// special trick to make things easier, 65 is up, 66 is down, 67 is right and 68 is left so if you subtract 65 and shift the bits in 1 by it you get the exact direction!
-				dir := uint16(1 << (b[0] - 65))
-				if dir == prevDir[0] {
-					continue
-				}
+				dir := uint16(b[0] - 64)
 				switch dir {
 				case up, down, right, left:
-					g.s[0].input <- dir
-					prevDir[0] = dir
+					send(0, dir)
 				}
 			}
-		}
-		if g.players > 1 && g.s[1].dead == false {
+		} else {
 			switch b[0] {
 			case 'w':
-				if prevDir[1] == up {
-					continue
-				}
-				g.s[1].input <- up
+				send(1, up)
 			case 'd':
-				if prevDir[1] == right {
-					continue
-				}
-				g.s[1].input <- right
+				send(1, right)
 			case 's':
-				if prevDir[1] == down {
-					continue
-				}
-				g.s[1].input <- down
+				send(1, down)
 			case 'a':
-				if prevDir[1] == left {
-					continue
-				}
-				g.s[1].input <- left
-			}
-		}
-		if g.players > 2 && g.s[2].dead == false {
-			switch b[0] {
+				send(1, left)
 			case 'y':
-				if prevDir[2] == up {
-					continue
-				}
-				g.s[2].input <- up
+				send(2, up)
 			case 'j':
-				if prevDir[2] == right {
-					continue
-				}
-				g.s[2].input <- right
+				send(2, right)
 			case 'h':
-				if prevDir[2] == down {
-					continue
-				}
-				g.s[2].input <- down
+				send(2, down)
 			case 'g':
-				if prevDir[2] == left {
-					continue
-				}
-				g.s[2].input <- left
-			}
-		}
-		if g.players > 3 && g.s[3].dead == false {
-			switch b[0] {
+				send(2, left)
 			case 'p':
-				if prevDir[3] == up {
-					continue
-				}
-				g.s[3].input <- up
+				send(3, up)
 			case '\'':
-				if prevDir[3] == right {
-					continue
-				}
-				g.s[3].input <- right
+				send(3, right)
 			case ';':
-				if prevDir[3] == down {
-					continue
-				}
-				g.s[3].input <- down
+				send(3, down)
 			case 'l':
-				if prevDir[3] == left {
-					continue
-				}
-				g.s[3].input <- left
+				send(3, left)
+			case 10:
+				return
 			}
+			// TODO proper restart
 		}
 	}
 }
@@ -235,16 +199,20 @@ func (g *game) processInput() {
 func (g *game) printSnakes() {
 	for i := uint(0); i < g.players; i++ {
 		if g.s[i].dead == false {
+			printColor(i)
 			g.s[i].print()
 		}
 	}
+	os.Stdout.Write([]byte{27, 91, 48, 109})
 }
 
 func (g *game) moveSnakes() {
 	for i, _ := range g.s {
-		if g.s[i].bs[0].pos == g.food {
-			g.s[i].appendBlock()
-			g.addFood()
+		for j, _ := range g.food {
+			if g.s[i].bs[0].pos == g.food[j] {
+				g.s[i].appendBlock(uint16(1*g.players))
+				g.addFood(j)
+			}
 		}
 		if g.s[i].dead == false {
 			g.s[i].move()
@@ -256,11 +224,13 @@ func (g *game) moveSnakes() {
 		}
 		for j, _ := range g.s {
 			if j != i {
-				if (g.s[j].on(g.s[i].bs[0].pos, 0)) {
+				if g.s[j].on(g.s[i].bs[0].pos, 0) {
+					printColor(uint(i))
 					g.s[i].die()
 				}
 				// TODO weird with one size snake
 			}
 		}
 	}
+	os.Stdout.Write([]byte{27, 91, 48, 109})
 }

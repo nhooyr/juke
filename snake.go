@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 const (
-	up = 1 << iota
+	up = iota + 1
 	down
 	right
 	left
@@ -43,7 +43,7 @@ func (s *snake) die() {
 }
 
 func (s *snake) on(p position, start int) bool {
-	for i := start; i < len(s.bs)-1; i ++{
+	for i := start; i < len(s.bs)-1; i++ {
 		if s.bs[i].pos == p {
 			return true
 		}
@@ -89,19 +89,21 @@ func (s *snake) move() {
 	}
 }
 
-func (s *snake) appendBlock() {
-	b := s.bs[len(s.bs)-1]
-	switch b.dir = s.bs[len(s.bs)-1].dir; b.dir {
-	case up:
-		b.pos.y += 1
-	case right:
-		b.pos.x -= 1
-	case down:
-		b.pos.y -= 1
-	case left:
-		b.pos.x += 1
+func (s *snake) appendBlock(i uint16) {
+	for j := uint16(0); j < i; j++ {
+		b := s.bs[len(s.bs)-1]
+		switch b.dir = s.bs[len(s.bs)-1].dir; b.dir {
+		case up:
+			b.pos.y += 1
+		case right:
+			b.pos.x -= 1
+		case down:
+			b.pos.y -= 1
+		case left:
+			b.pos.x += 1
+		}
+		s.bs = append(s.bs, b)
 	}
-	s.bs = append(s.bs, b)
 }
 
 func (s *snake) initialize(player uint) {
@@ -118,7 +120,5 @@ func (s *snake) initialize(player uint) {
 	case 4:
 		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3*2
 	}
-	for i := s.g.init - 1; i > 0; i-- {
-		s.appendBlock()
-	}
+	s.appendBlock(s.g.init-1)
 }

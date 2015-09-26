@@ -15,7 +15,7 @@ func main() {
 	log.SetPrefix("goSnake: ")
 	log.SetFlags(0)
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")
-	tmpw := flag.Uint("w", 0, "width of playground, (default width of tty)")
+	tmpw := flag.Uint("w", 0, "width of playground (default width of tty)")
 	tmpi := flag.Uint("i", 3, "initital size of snake")
 	tmps := flag.Int64("s", 20, "unit's per second for snake")
 	tmpf := flag.Int64("f", 4, "how many blocks each food adds")

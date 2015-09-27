@@ -27,10 +27,12 @@ func main() {
 	g.h = uint16(*tmph)
 	g.w = uint16(*tmpw)
 	g.init = uint16(*tmpi)
-	g.foodVal = uint16(*tmpf)
 	if g.init == 0 {
 		log.Fatal("initial size of snake cannot be 0")
+	} else if g.init == 1 {
+		log.Fatal("initial size of snake must be greater than 1")
 	}
+	g.foodVal = uint16(*tmpf)
 	g.speed = time.Duration(*tmps)
 
 	// hide cursor

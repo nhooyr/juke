@@ -226,7 +226,7 @@ func (g *game) checkSnakeCollisions() {
 		}
 		for j, _ := range g.s {
 			if j != i {
-				if g.s[j].on(g.s[i].bs[0].pos) || g.s[j].on(g.s[i].oldBs[0].pos) || g.s[i].on(g.s[j].oldBs[0].pos){
+				if g.s[j].on(g.s[i].bs[0].pos) {
 					g.s[i].die()
 					diedSnakes = append(diedSnakes, i)
 				}

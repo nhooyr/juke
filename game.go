@@ -215,7 +215,6 @@ func (g *game) printInitialSnakes() {
 
 func (g *game) moveSnakes() {
 	for i, _ := range g.s {
-		// TODO decide which version is better
 		for j, _ := range g.food {
 			if g.s[i].bs[0].p == g.food[j] {
 				g.s[i].appendBlocks(g.foodVal)

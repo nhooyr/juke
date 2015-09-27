@@ -1,24 +1,30 @@
 package main
 
-import (
-	"os"
-	"strconv"
-)
+import "os"
+
+// terminal escape sequences defined
+var normal = []byte{27, 91, 48, 109}
+var cursorVisible = []byte{27, 91, 51, 52, 104, 27, 91, 63, 50, 53, 104}
+var cursorInvisible = []byte{27, 91, 63, 50, 53, 108}
+var blue = []byte{34, 10}
+var green = []byte{32, 10}
+var red = []byte{31, 10}
+var magenta = []byte{35, 10}
 
 func printColor(i uint) {
-	var c string
+	var c []byte
+	esc := []byte{27, 91}
 	switch i {
 	case 0:
-		c = strconv.FormatUint(34, 10)
+		c = blue
 	case 1:
-		c = strconv.FormatUint(32, 10)
+		c = green
 	case 2:
-		c = strconv.FormatUint(31, 10)
+		c = red
 	case 3:
-		c = strconv.FormatUint(35, 10)
+		c = magenta
 	}
-	esc := []byte{27, 91}
-	esc = append(esc, []byte(c)...)
+	esc = append(esc, c...)
 	esc = append(esc, 109)
 	os.Stdout.Write(esc)
 

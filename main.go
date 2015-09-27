@@ -18,7 +18,7 @@ func main() {
 	tmpw := flag.Uint("w", 0, "width of playground (default width of tty)")
 	tmpi := flag.Uint("i", 3, "initital size of snake")
 	tmps := flag.Int64("s", 20, "unit's per second for snake")
-	tmpf := flag.Int64("f", 4, "how many blocks each food adds")
+	tmpf := flag.Int64("f", 1, "how many blocks each food adds")
 	flag.UintVar(&g.players, "p", 1, "number of players; controls: P1: arrows, P2: wasd, P3: yghj, P4: pl;'")
 	flag.Parse()
 	if g.players > 4 {
@@ -34,19 +34,20 @@ func main() {
 	g.speed = time.Duration(*tmps)
 
 	// hide cursor
-	os.Stdin.Write([]byte{27, 91, 63, 50, 53, 108})
+	os.Stdin.Write(cursorInvisible)
 
 	/// save current termios
 	var old syscall.Termios
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), syscall.TIOCGETA, uintptr(unsafe.Pointer(&old)), 0, 0, 0); err != 0 {
+	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlReadTermios, uintptr(unsafe.Pointer(&old)), 0, 0, 0); err != 0 {
 		log.Fatalln("not a terminal, got:", err)
 	}
 	cleanup := func() {
-		os.Stdout.Write([]byte{27, 91, 48, 109})
+		// restore text to normal
+		os.Stdout.Write(normal)
 		// make cursor visible
-		os.Stdin.Write([]byte{27, 91, 51, 52, 104, 27, 91, 63, 50, 53, 104})
+		os.Stdin.Write(cursorVisible)
 		// set tty to normal
-		if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), syscall.TIOCSETA, uintptr(unsafe.Pointer(&old)), 0, 0, 0); err != 0 {
+		if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlWriteTermios, uintptr(unsafe.Pointer(&old)), 0, 0, 0); err != 0 {
 			log.Fatal(err)
 		}
 	}
@@ -61,7 +62,7 @@ func main() {
 	// set raw mode
 	raw := old
 	raw.Lflag &^= syscall.ECHO | syscall.ICANON
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), syscall.TIOCSETA, uintptr(unsafe.Pointer(&raw)), 0, 0, 0); err != 0 {
+	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlWriteTermios, uintptr(unsafe.Pointer(&raw)), 0, 0, 0); err != 0 {
 		log.Fatal(err)
 	}
 

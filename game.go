@@ -207,7 +207,8 @@ func (g *game) printSnakes() {
 			g.s[i].print()
 		}
 	}
-	os.Stdout.Write([]byte{27, 91, 48, 109})
+	//normalize text
+	os.Stdout.Write(normal)
 }
 
 func (g *game) moveSnakes() {
@@ -232,9 +233,8 @@ func (g *game) moveSnakes() {
 					printColor(uint(i))
 					g.s[i].die()
 				}
-				// TODO weird with one size snake
 			}
 		}
 	}
-	os.Stdout.Write([]byte{27, 91, 48, 109})
+	os.Stdout.Write(normal)
 }

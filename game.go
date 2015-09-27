@@ -70,7 +70,7 @@ func (g *game) addFood(i int) {
 
 func (g *game) setDimensions() {
 	// get cursor position
-	os.Stdin.Write([]byte{27, 91, 54, 110})
+	os.Stdin.WriteString(CURSORPOS)
 	r := bufio.NewReader(os.Stdin)
 	p, err := r.ReadString('R')
 	if err != nil {
@@ -125,12 +125,7 @@ func (g *game) printGround() {
 }
 
 func (g *game) moveTo(p position) {
-	esc := []byte{27, 91}
-	esc = append(esc, []byte(strconv.FormatUint(uint64(p.y+g.origin.y-g.rowOffSet), 10))...)
-	esc = append(esc, 59)
-	esc = append(esc, []byte(strconv.FormatUint(uint64(p.x+g.origin.x), 10))...)
-	esc = append(esc, 72)
-	os.Stdin.Write(esc)
+	os.Stdin.WriteString(fmt.Sprintf(CURSORADDR, p.y+g.origin.y-g.rowOffSet, p.x+g.origin.x))
 }
 
 // process the input
@@ -231,7 +226,7 @@ func (g *game) checkSnakeCollisions() {
 		}
 		for j, _ := range g.s {
 			if j != i {
-				if g.s[j].on(g.s[i].bs[0].pos) || g.s[j].on(g.s[i].oldBs[0].pos) {
+				if g.s[j].on(g.s[i].bs[0].pos) || g.s[j].on(g.s[i].oldBs[0].pos) || g.s[i].on(g.s[j].oldBs[0].pos){
 					g.s[i].die()
 					diedSnakes = append(diedSnakes, i)
 				}

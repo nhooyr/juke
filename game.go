@@ -219,7 +219,6 @@ func (g *game) moveSnakes() {
 }
 
 func (g *game) checkSnakeCollisions() {
-	var snakesDied []int
 	for i, _ := range g.s {
 		if g.s[i].dead == true {
 			continue
@@ -228,16 +227,8 @@ func (g *game) checkSnakeCollisions() {
 			if j != i {
 				if g.s[j].on(g.s[i].bs[0].p) || g.s[j].on(g.s[i].oldBs[0].p) || g.s[i].on(g.s[j].oldBs[0].p) {
 					g.s[i].die()
-					snakesDied = append(snakesDied, i)
 				}
 			}
-		}
-	}
-	if snakesDied != nil {
-		for i := range snakesDied {
-			g.s[i].Lock()
-			g.s[i].bs = g.s[i].oldBs
-			g.s[i].Unlock()
 		}
 	}
 }

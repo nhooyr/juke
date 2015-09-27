@@ -52,11 +52,11 @@ func (s *snake) print() {
 	}
 }
 func (s *snake) die() {
-	s.printColor()
-	s.dead = true
 	s.Lock()
 	s.bs = s.oldBs
 	s.Unlock()
+	s.printColor()
+	s.dead = true
 	for i, _ := range s.bs {
 		s.g.moveTo(s.bs[i].p)
 		os.Stdout.WriteString("x")

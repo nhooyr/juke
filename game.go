@@ -219,23 +219,30 @@ func (g *game) moveSnakes() {
 }
 
 func (g *game) checkSnakeCollisions() {
-	var inc, end, min int
-	if rand.Intn(2) == 0 {
-		inc = 1
-		min = 0
-		end = len(g.s) - 1
-	} else {
-		inc = -1
-		min = len(g.s) - 1
-		end = -1
+	var min, end, inc int
+	setRand := func(min, end, inc *int) {
+		rand.Seed(time.Now().UnixNano())
+		if rand.Intn(2) == 0 {
+			*inc = 1
+			*min = 0
+			*end = len(g.s)
+		} else {
+			*inc = -1
+			*min = len(g.s) - 1
+			*end = -1
+		}
+
 	}
+	setRand(&min, &end, &inc)
 	for i := min; i != end; i += inc {
 		if g.s[i].dead == true {
 			continue
 		}
-		for j, _ := range g.s {
+		var inc, end, min int
+		setRand(&min, &end, &inc)
+		for j := min; j != end; j += inc {
 			if j != i {
-				if g.s[j].on(g.s[i].bs[0].p) || g.s[j].on(g.s[i].oldBs[0].p) {
+				if g.s[j].on(g.s[i].bs[0].p) || g.s[j].on(g.s[i].oldBs[0].p) { // something wrong here TODO
 					g.s[i].die()
 				}
 			}

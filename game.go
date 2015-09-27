@@ -233,5 +233,3 @@ func (g *game) checkSnakeCollisions() {
 		}
 	}
 }
-
-var swag int

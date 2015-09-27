@@ -220,7 +220,7 @@ func (g *game) moveSnakes() {
 
 func (g *game) checkSnakeCollisions() {
 	var inc, end, min int
-	if rand.Int()%2 == 0 {
+	if rand.Intn(2) == 0 {
 		inc = 1
 		min = 0
 		end = len(g.s)-1
@@ -235,7 +235,7 @@ func (g *game) checkSnakeCollisions() {
 		}
 		for j, _ := range g.s {
 			if j != i {
-				if g.s[j].on(g.s[i].bs[0].p) || g.s[j].on(g.s[i].oldBs[0].p) || g.s[i].on(g.s[j].oldBs[0].p) {
+				if g.s[j].on(g.s[i].bs[0].p) || g.s[j].on(g.s[i].oldBs[0].p) || g.s[i].on(g.s[j].oldBs[0].p) { // TODO CHECK THE EXTRA STATEMENT
 					g.s[i].die()
 				}
 			}

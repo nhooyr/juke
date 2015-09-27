@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"sync"
 )
@@ -49,7 +48,7 @@ func (s *snake) print() {
 	s.printColor()
 	for i, _ := range s.bs {
 		s.g.moveTo(s.bs[i].p)
-		fmt.Print("=")
+		os.Stdout.WriteString("=")
 	}
 }
 func (s *snake) die() {
@@ -60,7 +59,7 @@ func (s *snake) die() {
 	s.Unlock()
 	for i, _ := range s.bs {
 		s.g.moveTo(s.bs[i].p)
-		fmt.Print("x")
+		os.Stdout.WriteString("x")
 	}
 }
 
@@ -78,7 +77,7 @@ func (s *snake) move() {
 	s.oldBs = make([]block, len(s.bs))
 	copy(s.oldBs, s.bs)
 	s.g.moveTo(s.bs[len(s.bs)-1].p)
-	fmt.Print(" ")
+	os.Stdout.WriteString(" ")
 	for i := len(s.bs) - 1; i >= 0; i-- {
 		switch s.bs[i].d {
 		case up:

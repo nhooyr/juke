@@ -65,7 +65,7 @@ func (g *game) addFood(i int) {
 	g.food[i] = vp[rand.Intn(len(vp))]
 	g.moveTo(g.food[i])
 	os.Stdout.WriteString(NORMAL)
-	fmt.Print("A")
+	os.Stdout.WriteString("A")
 }
 
 func (g *game) setDimensions() {
@@ -109,17 +109,17 @@ func (g *game) printGround() {
 		for j := uint16(0); j < g.w; j++ {
 			switch {
 			case (i == g.h-1 || i == 0) && (j == 0 || j == g.w-1):
-				fmt.Print("┼")
+				os.Stdout.WriteString("┼")
 			case i == 0 || i == g.h-1:
-				fmt.Print("─")
+				os.Stdout.WriteString("─")
 			case j == 0 || j == g.w-1:
-				fmt.Print("│")
+				os.Stdout.WriteString("│")
 			default:
 				g.moveTo(position{i + g.rowOffSet, g.w - 1})
 			}
 		}
 		if i < g.h-1 {
-			fmt.Print("\n")
+			os.Stdout.WriteString("\n")
 		}
 	}
 }
@@ -223,10 +223,10 @@ func (g *game) checkSnakeCollisions() {
 	if rand.Intn(2) == 0 {
 		inc = 1
 		min = 0
-		end = len(g.s)-1
+		end = len(g.s) - 1
 	} else {
 		inc = -1
-		min = len(g.s)-1
+		min = len(g.s) - 1
 		end = -1
 	}
 	for i := min; i != end; i += inc {

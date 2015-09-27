@@ -242,10 +242,32 @@ func (g *game) checkSnakeCollisions() {
 		setRand(&min, &end, &inc)
 		for j := min; j != end; j += inc {
 			if j != i {
-				if g.s[j].on(g.s[i].bs[0].p) || (len(g.s[i].bs) == 1 && g.s[i].on(g.s[j].oldBs[0].p)){
+				if g.s[j].on(g.s[i].bs[0].p) || (len(g.s[i].bs) == 1 && oppositeDir(g.s[i].bs[0].d, g.s[j].bs[0].d) && g.s[i].on(g.s[j].oldBs[0].p)) {
 					g.s[i].die()
 				}
 			}
 		}
 	}
+}
+
+func oppositeDir(d1, d2 uint16) bool {
+	switch d1 {
+	case up:
+		if d2 == down {
+			return true
+		}
+	case down:
+		if d2 == up {
+			return true
+		}
+	case right:
+		if d2 == left {
+			return true
+		}
+	case left:
+		if d2 == right {
+			return true
+		}
+	}
+	return false
 }

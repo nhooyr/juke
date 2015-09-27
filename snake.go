@@ -53,9 +53,21 @@ func (s *snake) initalPrint() {
 }
 
 func (s *snake) print() {
-	if !s.on(s.oldBs[len(s.oldBs)-1].p, len(s.oldBs)-2, -1, -1) {
-		s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
-		os.Stdout.WriteString(" ")
+	if !s.on(s.oldBs[len(s.oldBs)-1].p, len(s.bs)-1, -1, -1) {
+		var used bool
+		for i, _ := range s.g.s {
+			if uint(i) == s.player {
+				continue
+			}
+			if s.g.s[i].on(s.oldBs[len(s.oldBs)-1].p, 0, len(s.g.s[i].bs), 1) {
+				used = true
+				break
+			}
+		}
+		if used == false {
+			s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
+			os.Stdout.WriteString(" ")
+		}
 	}
 	if s.on(s.bs[0].p, 1, len(s.bs), 1) {
 		return

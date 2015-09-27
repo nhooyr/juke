@@ -83,10 +83,10 @@ func main() {
 	// start game
 	g.initialize()
 	for {
-		g.printSnakes()
 		g.moveTo(position{g.h - 1, g.w - 1})
 		time.Sleep(time.Second / g.speed)
 		g.moveSnakes()
 		g.checkCollisions()
+		g.printSnakes()
 	}
 }

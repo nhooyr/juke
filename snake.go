@@ -41,11 +41,8 @@ func (s *snake) print() {
 func (s *snake) die() {
 	printColor(s.player)
 	s.dead = true
-	s.Lock()
-	s.bs = s.oldBs //TODO figure out how to get rid of this shit
-	s.Unlock()
-	for i, _ := range s.bs {
-		s.g.moveTo(s.bs[i].p)
+	for i, _ := range s.oldBs {
+		s.g.moveTo(s.oldBs[i].p)
 		fmt.Print("x")
 	}
 }

@@ -13,17 +13,17 @@ var green = []byte("32")
 var red = []byte("31")
 var magenta = []byte("35")
 
-func printColor(i uint) {
+func printColor(player uint) {
 	var c []byte
 	esc := []byte{27, 91}
-	switch i {
-	case 0:
-		c = blue
+	switch player {
 	case 1:
-		c = green
+		c = blue
 	case 2:
-		c = red
+		c = green
 	case 3:
+		c = red
+	case 4:
 		c = magenta
 	}
 	esc = append(esc, c...)

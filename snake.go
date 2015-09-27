@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 const (
 	up = iota + 1
@@ -26,27 +28,27 @@ type snake struct {
 	g     *game
 	dead  bool
 	sync.Mutex
+	player uint
 }
 
 func (s *snake) print() {
-	s.Lock()
+	printColor(s.player)
 	for i, _ := range s.bs {
 		s.g.moveTo(s.bs[i].pos)
 		fmt.Print("=")
 	}
-	s.Unlock()
 }
 func (s *snake) die() {
+	printColor(s.player)
 	s.dead = true
-	s.bs = s.oldBs
-	for i, _ := range s.bs {
-		s.g.moveTo(s.bs[i].pos)
+	for i, _ := range s.oldBs {
+		s.g.moveTo(s.oldBs[i].pos)
 		fmt.Print("x")
 	}
 }
 
-func (s *snake) on(p position, start int) bool {
-	for i := start; i < len(s.bs); i++ {
+func (s *snake) on(p position) bool {
+	for i := 0; i < len(s.bs); i++ {
 		if s.bs[i].pos == p {
 			return true
 		}
@@ -113,12 +115,13 @@ func (s *snake) appendBlocks(i uint16) {
 
 func (s *snake) initialize(player uint) {
 	s.bs = make([]block, 1)
+	s.player = player
 	s.bs[0].dir = right
-	switch player {
+	switch s.player {
 	case 1:
-		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3
-	case 2:
 		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3
+	case 2:
+		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3
 	case 3:
 		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3*2
 	case 4:

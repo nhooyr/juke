@@ -48,7 +48,7 @@ func (g *game) getValidFoodPos() (vp []position) {
 		for j := uint16(1); j < g.w-1; j++ {
 			for s := uint(0); s < g.players; s++ {
 				for f := 0; uint(f) < g.players; f++ {
-					if g.food[f] == (position{i, j}) || g.s[s].on(position{i, j}, 0) {
+					if g.food[f] == (position{i, j}) || g.s[s].on(position{i, j}) {
 						continue xLoop
 					}
 				}
@@ -64,6 +64,7 @@ func (g *game) addFood(i int) {
 	rand.Seed(time.Now().UnixNano())
 	g.food[i] = vp[rand.Intn(len(vp))]
 	g.moveTo(g.food[i])
+	os.Stdout.Write(normal)
 	fmt.Print("A")
 }
 
@@ -203,12 +204,9 @@ func (g *game) processInput() {
 func (g *game) printSnakes() {
 	for i := uint(0); i < g.players; i++ {
 		if g.s[i].dead == false {
-			printColor(i)
 			g.s[i].print()
 		}
 	}
-	//normalize text
-	os.Stdout.Write(normal)
 }
 
 func (g *game) moveSnakes() {
@@ -223,22 +221,30 @@ func (g *game) moveSnakes() {
 			g.s[i].move()
 		}
 	}
+}
+
+func (g *game) checkSnakeCollisions() {
+	var diedSnakes []int
 	for i, _ := range g.s {
 		if g.s[i].dead == true {
 			continue
 		}
 		for j, _ := range g.s {
 			if j != i {
-				if g.s[j].on(g.s[i].bs[0].pos, 0) {
+				if g.s[j].on(g.s[i].bs[0].pos) || g.s[j].on(g.s[i].oldBs[0].pos) {
 					printColor(uint(i))
 					g.s[i].die()
-					fmt.Println(swag)
-					swag++
+					diedSnakes = append(diedSnakes, i)
 				}
 			}
 		}
 	}
-	os.Stdout.Write(normal)
-}
+	if diedSnakes != nil {
+		for i, _ := range diedSnakes {
+			g.s[i].Lock()
+			g.s[i].bs = g.s[i].oldBs
+			g.s[i].Unlock()
+		}
+	}
 
-var swag int
+}

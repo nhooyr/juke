@@ -242,7 +242,7 @@ func (g *game) checkSnakeCollisions() {
 		setRand(&min, &end, &inc)
 		for j := min; j != end; j += inc {
 			if j != i {
-				if g.s[j].on(g.s[i].bs[0].p) || g.s[j].on(g.s[i].oldBs[0].p) { // something wrong here TODO
+				if g.s[j].on(g.s[i].bs[0].p) || ((len(g.s[i].bs) == 1 || len(g.s[j].bs) == 1) && (g.s[j].on(g.s[i].oldBs[0].p) || g.s[i].on(g.s[j].oldBs[0].p))){
 					g.s[i].die()
 				}
 			}

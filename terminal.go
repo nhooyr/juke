@@ -18,13 +18,13 @@ const (
 
 func printColor(player uint) {
 	switch player {
-	case 1:
+	case 0:
 		os.Stdout.WriteString(BLUE)
-	case 2:
+	case 1:
 		os.Stdout.WriteString(GREEN)
-	case 3:
+	case 2:
 		os.Stdout.WriteString(RED)
-	case 4:
+	case 3:
 		os.Stdout.WriteString(MAGENTA)
 	}
 }

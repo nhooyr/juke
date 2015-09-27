@@ -32,8 +32,9 @@ func (g *game) initialize() {
 	g.s = make([]snake, g.players)
 	for i := uint(0); i < g.players; i++ {
 		g.s[i].g = g
-		g.s[i].initialize(i + 1)
+		g.s[i].initialize(i)
 	}
+	fmt.Println(g.s[0].bs, g.s[1].bs)
 	g.food = make([]position, g.players)
 	for i, _ := range g.food {
 		g.addFood(i)
@@ -43,17 +44,17 @@ func (g *game) initialize() {
 
 func (g *game) getValidFoodPos() (vp []position) {
 	vp = []position{}
-	for i := uint16(1); i < g.h-1; i++ {
+	for y := uint16(1); y < g.h-1; y++ {
 	xLoop:
-		for j := uint16(1); j < g.w-1; j++ {
+		for x := uint16(1); x < g.w-1; x++ {
 			for s := uint(0); s < g.players; s++ {
 				for f := 0; uint(f) < g.players; f++ {
-					if g.food[f] == (position{i, j}) || g.s[s].on(position{i, j}) {
+					if g.food[f] == (position{y, x}) || g.s[s].on(position{y, x}) {
 						continue xLoop
 					}
 				}
 			}
-			vp = append(vp, position{i, j})
+			vp = append(vp, position{y, x})
 		}
 	}
 	return
@@ -147,7 +148,7 @@ func (g *game) processInput() {
 			return
 		}
 		g.s[s].Lock()
-		g.s[s].bs[0].dir = dir
+		g.s[s].bs[0].d = dir
 		g.s[s].Unlock()
 	}
 	for {
@@ -207,7 +208,7 @@ func (g *game) printSnakes() {
 func (g *game) moveSnakes() {
 	for i, _ := range g.s {
 		for j, _ := range g.food {
-			if g.s[i].bs[0].pos == g.food[j] {
+			if g.s[i].bs[0].p == g.food[j] {
 				g.s[i].appendBlocks(g.foodVal)
 				g.addFood(j)
 			}
@@ -219,26 +220,18 @@ func (g *game) moveSnakes() {
 }
 
 func (g *game) checkSnakeCollisions() {
-	var diedSnakes []int
 	for i, _ := range g.s {
 		if g.s[i].dead == true {
 			continue
 		}
 		for j, _ := range g.s {
 			if j != i {
-				if g.s[j].on(g.s[i].bs[0].pos) {
+				if g.s[j].on(g.s[i].bs[0].p) || g.s[j].on(g.s[i].oldBs[0].p) || g.s[i].on(g.s[j].oldBs[0].p) {
 					g.s[i].die()
-					diedSnakes = append(diedSnakes, i)
 				}
 			}
 		}
 	}
-	if diedSnakes != nil {
-		for _, i := range diedSnakes {
-			g.s[i].Lock()
-			g.s[i].bs = g.s[i].oldBs
-			g.s[i].Unlock()
-		}
-	}
-
 }
+
+var swag int

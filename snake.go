@@ -18,8 +18,8 @@ type position struct {
 }
 
 type block struct {
-	dir uint16
-	pos position
+	d uint16
+	p position
 }
 
 type snake struct {
@@ -34,22 +34,25 @@ type snake struct {
 func (s *snake) print() {
 	printColor(s.player)
 	for i, _ := range s.bs {
-		s.g.moveTo(s.bs[i].pos)
+		s.g.moveTo(s.bs[i].p)
 		fmt.Print("=")
 	}
 }
 func (s *snake) die() {
 	printColor(s.player)
 	s.dead = true
-	for i, _ := range s.oldBs {
-		s.g.moveTo(s.oldBs[i].pos)
+	s.Lock()
+	s.bs = s.oldBs //TODO figure out how to get rid of this shit
+	s.Unlock()
+	for i, _ := range s.bs {
+		s.g.moveTo(s.bs[i].p)
 		fmt.Print("x")
 	}
 }
 
 func (s *snake) on(p position) bool {
 	for i := 0; i < len(s.bs); i++ {
-		if s.bs[i].pos == p {
+		if s.bs[i].p == p {
 			return true
 		}
 	}
@@ -60,23 +63,23 @@ func (s *snake) move() {
 	s.Lock()
 	s.oldBs = make([]block, len(s.bs))
 	copy(s.oldBs, s.bs)
-	s.g.moveTo(s.bs[len(s.bs)-1].pos)
+	s.g.moveTo(s.bs[len(s.bs)-1].p)
 	fmt.Print(" ")
 	for i := len(s.bs) - 1; i >= 0; i-- {
-		switch s.bs[i].dir {
+		switch s.bs[i].d {
 		case up:
-			s.bs[i].pos.y -= 1
+			s.bs[i].p.y -= 1
 		case right:
-			s.bs[i].pos.x += 1
+			s.bs[i].p.x += 1
 		case down:
-			s.bs[i].pos.y += 1
+			s.bs[i].p.y += 1
 		case left:
-			s.bs[i].pos.x -= 1
+			s.bs[i].p.x -= 1
 		}
 		if i != 0 {
-			s.bs[i].dir = s.bs[i-1].dir
+			s.bs[i].d = s.bs[i-1].d
 		}
-		s.g.wallHax(&s.bs[i].pos)
+		s.g.wallHax(&s.bs[i].p)
 	}
 	s.Unlock()
 }
@@ -97,18 +100,18 @@ func (g *game) wallHax(p *position) {
 func (s *snake) appendBlocks(i uint16) {
 	for j := uint16(0); j < i; j++ {
 		b := s.bs[len(s.bs)-1]
-		b.dir = s.bs[len(s.bs)-1].dir
-		switch b.dir {
+		b.d = s.bs[len(s.bs)-1].d
+		switch b.d {
 		case up:
-			b.pos.y += 1
+			b.p.y += 1
 		case right:
-			b.pos.x -= 1
+			b.p.x -= 1
 		case down:
-			b.pos.y -= 1
+			b.p.y -= 1
 		case left:
-			b.pos.x += 1
+			b.p.x += 1
 		}
-		s.g.wallHax(&b.pos)
+		s.g.wallHax(&b.p)
 		s.bs = append(s.bs, b)
 	}
 }
@@ -116,16 +119,16 @@ func (s *snake) appendBlocks(i uint16) {
 func (s *snake) initialize(player uint) {
 	s.bs = make([]block, 1)
 	s.player = player
-	s.bs[0].dir = right
+	s.bs[0].d = right
 	switch s.player {
+	case 0:
+		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2, s.g.h/3
 	case 1:
-		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3
+		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3, s.g.h/3
 	case 2:
-		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3
+		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3, s.g.h/3*2
 	case 3:
-		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3, s.g.h/3*2
-	case 4:
-		s.bs[0].pos.x, s.bs[0].pos.y = s.g.w/3*2, s.g.h/3*2
+		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2, s.g.h/3*2
 	}
 	s.appendBlocks(s.g.init - 1)
 }

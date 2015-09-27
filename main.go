@@ -29,8 +29,6 @@ func main() {
 	g.init = uint16(*tmpi)
 	if g.init == 0 {
 		log.Fatal("initial size of snake cannot be 0")
-	} else if g.init == 1 {
-		log.Fatal("initial size of snake must be greater than 1")
 	}
 	g.foodVal = uint16(*tmpf)
 	g.speed = time.Duration(*tmps)

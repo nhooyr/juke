@@ -1,7 +1,5 @@
 package main
 
-import "os"
-
 // terminal escape sequences defined
 const (
 	CSI         = "\033["
@@ -15,16 +13,3 @@ const (
 	RED         = CSI + "31m"
 	MAGENTA     = CSI + "35m"
 )
-
-func printColor(player uint) {
-	switch player {
-	case 0:
-		os.Stdout.WriteString(BLUE)
-	case 1:
-		os.Stdout.WriteString(GREEN)
-	case 2:
-		os.Stdout.WriteString(RED)
-	case 3:
-		os.Stdout.WriteString(MAGENTA)
-	}
-}

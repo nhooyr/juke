@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"sync"
 )
 
@@ -31,21 +32,34 @@ type snake struct {
 	player uint
 }
 
+func (s *snake) printColor() {
+	switch s.player {
+	case 0:
+		os.Stdout.WriteString(BLUE)
+	case 1:
+		os.Stdout.WriteString(GREEN)
+	case 2:
+		os.Stdout.WriteString(RED)
+	case 3:
+		os.Stdout.WriteString(MAGENTA)
+	}
+}
+
 func (s *snake) print() {
-	printColor(s.player)
+	s.printColor()
 	for i, _ := range s.bs {
 		s.g.moveTo(s.bs[i].p)
 		fmt.Print("=")
 	}
 }
 func (s *snake) die() {
-	printColor(s.player)
+	s.printColor()
 	s.dead = true
 	s.Lock()
-	s.bs = s.oldBs //TODO find way to get rid of this shit
+	s.bs = s.oldBs
 	s.Unlock()
-	for i, _ := range s.oldBs {
-		s.g.moveTo(s.oldBs[i].p)
+	for i, _ := range s.bs {
+		s.g.moveTo(s.bs[i].p)
 		fmt.Print("x")
 	}
 }

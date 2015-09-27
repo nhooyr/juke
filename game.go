@@ -219,7 +219,17 @@ func (g *game) moveSnakes() {
 }
 
 func (g *game) checkSnakeCollisions() {
-	for i, _ := range g.s {
+	var inc, end, min int
+	if rand.Int()%2 == 0 {
+		inc = 1
+		min = 0
+		end = len(g.s)-1
+	} else {
+		inc = -1
+		min = len(g.s)-1
+		end = -1
+	}
+	for i := min; i != end; i += inc {
 		if g.s[i].dead == true {
 			continue
 		}

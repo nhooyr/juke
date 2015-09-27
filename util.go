@@ -3,30 +3,26 @@ package main
 import "os"
 
 // terminal escape sequences defined
-var normal = []byte{27, 91, 48, 109}
-var cursorVisible = []byte{27, 91, 51, 52, 104, 27, 91, 63, 50, 53, 104}
-var cursorInvisible = []byte{27, 91, 63, 50, 53, 108}
-
-// printColor handles the other bits
-var blue = []byte("34")
-var green = []byte("32")
-var red = []byte("31")
-var magenta = []byte("35")
+const (
+	CSI         = "\033["
+	NORMAL      = CSI + "0m"
+	CURSORVIS   = CSI + "34h\033[?25h"
+	CURSORINVIS = CSI + "?25l"
+	BLUE        = CSI + "34m"
+	GREEN       = CSI + "32m"
+	RED         = CSI + "31m"
+	MAGENTA     = CSI + "35m"
+)
 
 func printColor(player uint) {
-	var c []byte
-	esc := []byte{27, 91}
 	switch player {
 	case 1:
-		c = blue
+		os.Stdout.WriteString(BLUE)
 	case 2:
-		c = green
+		os.Stdout.WriteString(GREEN)
 	case 3:
-		c = red
+		os.Stdout.WriteString(RED)
 	case 4:
-		c = magenta
+		os.Stdout.WriteString(MAGENTA)
 	}
-	esc = append(esc, c...)
-	esc = append(esc, 109)
-	os.Stdout.Write(esc)
 }

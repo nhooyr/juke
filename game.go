@@ -64,7 +64,7 @@ func (g *game) addFood(i int) {
 	rand.Seed(time.Now().UnixNano())
 	g.food[i] = vp[rand.Intn(len(vp))]
 	g.moveTo(g.food[i])
-	os.Stdout.Write(normal)
+	os.Stdout.WriteString(NORMAL)
 	fmt.Print("A")
 }
 
@@ -232,7 +232,6 @@ func (g *game) checkSnakeCollisions() {
 		for j, _ := range g.s {
 			if j != i {
 				if g.s[j].on(g.s[i].bs[0].pos) || g.s[j].on(g.s[i].oldBs[0].pos) {
-					printColor(uint(i))
 					g.s[i].die()
 					diedSnakes = append(diedSnakes, i)
 				}
@@ -240,7 +239,7 @@ func (g *game) checkSnakeCollisions() {
 		}
 	}
 	if diedSnakes != nil {
-		for i, _ := range diedSnakes {
+		for _, i := range diedSnakes {
 			g.s[i].Lock()
 			g.s[i].bs = g.s[i].oldBs
 			g.s[i].Unlock()

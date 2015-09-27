@@ -34,7 +34,7 @@ func main() {
 	g.speed = time.Duration(*tmps)
 
 	// hide cursor
-	os.Stdin.Write(cursorInvisible)
+	os.Stdin.WriteString(CURSORINVIS)
 
 	/// save current termios
 	var old syscall.Termios
@@ -43,9 +43,9 @@ func main() {
 	}
 	cleanup := func() {
 		// restore text to normal
-		os.Stdout.Write(normal)
+		os.Stdout.WriteString(NORMAL)
 		// make cursor visible
-		os.Stdin.Write(cursorVisible)
+		os.Stdin.WriteString(CURSORVIS)
 		// set tty to normal
 		if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlWriteTermios, uintptr(unsafe.Pointer(&old)), 0, 0, 0); err != 0 {
 			log.Fatal(err)
@@ -81,7 +81,7 @@ func main() {
 	}
 	// start game
 	g.initialize()
-	log.SetPrefix("\033[0mgoSnake: ")
+	log.SetPrefix(NORMAL + "goSnake: ")
 	for {
 		g.printSnakes()
 		g.moveTo(position{g.h - 1, g.w - 1})

@@ -79,14 +79,14 @@ func main() {
 		cleanup()
 		os.Exit(0)
 	}
+	log.SetPrefix(NORMAL + "goSnake: ")
 	// start game
 	g.initialize()
-	log.SetPrefix(NORMAL + "goSnake: ")
 	for {
 		g.printSnakes()
 		g.moveTo(position{g.h - 1, g.w - 1})
 		time.Sleep(time.Second / g.speed)
 		g.moveSnakes()
-		g.checkSnakeCollisions()
+		g.checkCollisions()
 	}
 }

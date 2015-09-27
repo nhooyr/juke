@@ -34,6 +34,7 @@ func (g *game) initialize() {
 		g.s[i].g = g
 		g.s[i].initialize(i)
 	}
+	g.printInitialSnakes()
 	g.food = make([]position, g.players)
 	for i, _ := range g.food {
 		g.addFood(i)
@@ -48,7 +49,7 @@ func (g *game) getValidFoodPos() (vp []position) {
 		for x := uint16(1); x < g.w-1; x++ {
 			for s := uint(0); s < g.players; s++ {
 				for f := 0; uint(f) < g.players; f++ {
-					if g.food[f] == (position{y, x}) || g.s[s].on(position{y, x}) {
+					if g.food[f] == (position{y, x}) || g.s[s].on(position{y, x}, 0, len(g.s[s].bs), 1) {
 						continue xLoop
 					}
 				}
@@ -204,6 +205,14 @@ func (g *game) printSnakes() {
 	}
 }
 
+func (g *game) printInitialSnakes() {
+	for i := uint(0); i < g.players; i++ {
+		if g.s[i].dead == false {
+			g.s[i].initalPrint()
+		}
+	}
+}
+
 func (g *game) moveSnakes() {
 	for i, _ := range g.s {
 		for j, _ := range g.food {
@@ -218,7 +227,7 @@ func (g *game) moveSnakes() {
 	}
 }
 
-func (g *game) checkSnakeCollisions() {
+func (g *game) checkCollisions() {
 	var min, end, inc int
 	setRand := func(min, end, inc *int) {
 		rand.Seed(time.Now().UnixNano())
@@ -243,7 +252,7 @@ func (g *game) checkSnakeCollisions() {
 		for j := min; j != end; j += inc {
 			if j != i {
 				// first check if any of j is on the first block of i, then if len of i's bs is just one, make sure their first elements are opposite dir and then check if i is on any of j's oldBs or if i is on any of j's new Bs (this is needed for when one is len of just 1 and the other is greater
-				if g.s[j].on(g.s[i].bs[0].p) || (len(g.s[i].bs) == 1 && oppositeDir(g.s[i].bs[0].d, g.s[j].bs[0].d) && (g.s[i].on(g.s[j].oldBs[0].p) || g.s[i].on(g.s[j].bs[0].p))) {
+				if g.s[j].on(g.s[i].bs[0].p, 0, len(g.s[j].bs), 1) || (len(g.s[i].bs) == 1 && oppositeDir(g.s[i].bs[0].d, g.s[j].bs[0].d) && (g.s[i].on(g.s[j].oldBs[0].p, 0, len(g.s[i].bs), 1) || g.s[i].on(g.s[j].bs[0].p, 0, len(g.s[i].bs), 1))) {
 					g.s[i].die()
 				}
 			}

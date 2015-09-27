@@ -232,9 +232,13 @@ func (g *game) moveSnakes() {
 				if g.s[j].on(g.s[i].bs[0].pos, 0) {
 					printColor(uint(i))
 					g.s[i].die()
+					fmt.Println(swag)
+					swag++
 				}
 			}
 		}
 	}
 	os.Stdout.Write(normal)
 }
+
+var swag int

@@ -6,10 +6,12 @@ import "os"
 var normal = []byte{27, 91, 48, 109}
 var cursorVisible = []byte{27, 91, 51, 52, 104, 27, 91, 63, 50, 53, 104}
 var cursorInvisible = []byte{27, 91, 63, 50, 53, 108}
-var blue = []byte{34, 10}
-var green = []byte{32, 10}
-var red = []byte{31, 10}
-var magenta = []byte{35, 10}
+
+// printColor handles the other bits
+var blue = []byte("34")
+var green = []byte("32")
+var red = []byte("31")
+var magenta = []byte("35")
 
 func printColor(i uint) {
 	var c []byte
@@ -27,5 +29,4 @@ func printColor(i uint) {
 	esc = append(esc, c...)
 	esc = append(esc, 109)
 	os.Stdout.Write(esc)
-
 }

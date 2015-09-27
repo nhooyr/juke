@@ -235,7 +235,7 @@ func (g *game) checkSnakeCollisions() {
 		}
 		for j, _ := range g.s {
 			if j != i {
-				if g.s[j].on(g.s[i].bs[0].p) || g.s[j].on(g.s[i].oldBs[0].p) || g.s[i].on(g.s[j].oldBs[0].p) { // TODO CHECK THE EXTRA STATEMENT
+				if g.s[j].on(g.s[i].bs[0].p) || g.s[j].on(g.s[i].oldBs[0].p) { // TODO CHECK THE EXTRA STATEMENT
 					g.s[i].die()
 				}
 			}

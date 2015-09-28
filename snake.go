@@ -96,7 +96,7 @@ func (s *snake) update() {
 		s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
 		os.Stdout.WriteString(" ")
 	}
-	if s.on(s.bs[0].p,1, len(s.bs), 1) {
+	if s.on(s.bs[0].p, 1, len(s.bs), 1) {
 		return
 	}
 	s.printColor()

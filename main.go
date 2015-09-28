@@ -81,11 +81,14 @@ Controls:
 	}
 
 	g.setDimensions()
+	if g.w < 4 || g.h < 4 {
+		cleanup()
+		log.Fatal("width or height cannot be less than 4")
+	}
 	maxInit := g.w / 3
 	if g.init > maxInit {
-		log.Println("init too big, max init size for this width is", maxInit)
 		cleanup()
-		os.Exit(0)
+		log.Fatalln("init too big, max init size for this width is", maxInit)
 	}
 	log.SetPrefix(NORMAL + "goSnake: ")
 	// initialize game
@@ -97,13 +100,14 @@ Controls:
 				g.clear(i)
 				g.start(i)
 			}
-			g.printAllSnakes()
+			g.printSnakes()
 			// start listening for input again
 			g.restart <- struct{}{}
 		default:
 			//no exit
 		}
 		time.Sleep(time.Second / g.speed)
+		g.checkFood()
 		g.moveSnakes()
 		g.checkCollisions()
 		g.updateSnakes()

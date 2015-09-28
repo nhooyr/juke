@@ -42,7 +42,7 @@ func (g *game) initialize() {
 	for i := uint(0); i < g.players; i++ {
 		g.start(i)
 	}
-	g.printAllSnakes()
+	g.printSnakes()
 	go g.processInput()
 }
 
@@ -66,6 +66,9 @@ func (g *game) getValidFoodPos() (vp []position) {
 
 func (g *game) addFood(i int) {
 	vp := g.getValidFoodPos()
+	if len(vp) == 0 {
+		return
+	}
 	rand.Seed(time.Now().UnixNano())
 	g.food[i] = vp[rand.Intn(len(vp))]
 	g.moveTo(g.food[i])
@@ -220,7 +223,7 @@ func (g *game) updateSnakes() {
 	}
 }
 
-func (g *game) printAllSnakes() {
+func (g *game) printSnakes() {
 	for i := uint(0); i < g.players; i++ {
 		if g.s[i].dead == false {
 			g.s[i].printOverAll("=")
@@ -234,6 +237,9 @@ func (g *game) moveSnakes() {
 			g.s[i].move()
 		}
 	}
+}
+
+func (g *game) checkFood() {
 	for i := uint(0); i < g.players; i++ {
 		for j := 0; uint(j) < g.players; j++ {
 			if g.s[i].bs[0].p == g.food[j] {

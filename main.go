@@ -63,6 +63,7 @@ Controls:
 		if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlWriteTermios, uintptr(unsafe.Pointer(&old)), 0, 0, 0); err != 0 {
 			log.Fatal(err)
 		}
+		os.Stdout.WriteString("\n")
 	}
 	// capture signals
 	g.sigs = make(chan os.Signal)

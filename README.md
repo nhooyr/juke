@@ -23,6 +23,4 @@ documentation
 
 proper interface
 
-drawing bugs
-
 2x slower when u go up

@@ -74,8 +74,7 @@ func (g *game) addFood(i int) {
 	rand.Seed(time.Now().UnixNano())
 	g.food[i] = vp[rand.Intn(len(vp))]
 	g.moveTo(g.food[i])
-	os.Stdout.WriteString(NORMAL)
-	os.Stdout.WriteString("A")
+	os.Stdout.WriteString(NORMAL + "A")
 }
 
 func (g *game) setDimensions() {
@@ -213,15 +212,16 @@ func (g *game) processInput() {
 					if b[0] == 't' {
 						g.pause <- struct{}{}
 						break
-					}
+					} else if b[0] == 'q' {
+						g.sigs <- syscall.SIGTERM
 
+					}
 				}
 			case 'r':
 				g.restart <- struct{}{}
 				<-g.restart
 			case 'q':
 				g.sigs <- syscall.SIGTERM
-				return
 			}
 		}
 	}
@@ -251,16 +251,20 @@ func (g *game) moveSnakes() {
 	}
 }
 
-func (b *block) printOverBlocks(){
-
-}
-
 func (g *game) checkFood() {
 	for i := uint(0); i < g.players; i++ {
 		for j := 0; uint(j) < g.players; j++ {
 			if g.s[i].bs[0].p == g.food[j] {
+				bs := g.s[i].appendBlocks(g.foodVal)
+				for k := uint16(0); k < g.foodVal; k++ {
+					if !g.checkIfUsed(bs[k].p) {
+						g.moveTo(bs[k].p)
+						g.s[i].printColor()
+						os.Stdout.WriteString("=")
+					}
+				}
 				g.s[i].Lock()
-				g.s[i].appendBlocks(g.foodVal)
+				g.s[i].bs = append(g.s[i].bs, bs...)
 				g.s[i].Unlock()
 				g.addFood(j)
 			}
@@ -308,6 +312,15 @@ func oppositeDir(d1, d2 uint16) bool {
 		}
 	} else {
 		if d1-1 == d2 {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *game) checkIfUsed(p position) bool {
+	for i := uint(0); i < g.players; i++ {
+		if g.s[i].on(p, 0, len(g.s[i].bs), 1) || g.food[i] == p {
 			return true
 		}
 	}

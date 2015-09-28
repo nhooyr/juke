@@ -41,14 +41,7 @@ func (s *snake) printOverAll(p string) {
 }
 
 func (s *snake) update() {
-	var used bool
-	for i := uint(0); i < s.g.players; i++ {
-		if s.g.s[i].on(s.oldBs[len(s.oldBs)-1].p, 0, len(s.g.s[i].bs), 1) /*|| s.g.food[i] == s.oldBs[len(s.oldBs)-1].p */ {
-			used = true
-			break
-		}
-	}
-	if used == false {
+	if !s.g.checkIfUsed(s.oldBs[len(s.oldBs)-1].p) {
 		s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
 		os.Stdout.WriteString(" ")
 	}
@@ -77,9 +70,10 @@ func (s *snake) on(p position, min, end, inc int) bool {
 	return false
 }
 
-func (s *snake) syncOldBsandBs(){
+func (s *snake) syncOldBsandBs() {
 	if len(s.bs) != len(s.oldBs) {
-		for i := len(s.bs); i > len(s.oldBs)-1; i-- {
+		min := len(s.oldBs)
+		for i := len(s.bs); i > min; i-- {
 			s.oldBs = append(s.oldBs, block{})
 		}
 	}
@@ -110,13 +104,17 @@ func (g *game) wallHax(p *position) {
 	}
 }
 
-func (s *snake) appendBlocks(i uint16) {
-	for j := uint16(0); j < i; j++ {
-		b := s.bs[len(s.bs)-1]
-		b.moveBack()
-		s.g.wallHax(&b.p)
-		s.bs = append(s.bs, b)
+func (s *snake) appendBlocks(i uint16) (bs []block) {
+	bs = make([]block, i)
+	bs[0] = s.bs[len(s.bs)-1]
+	bs[0].moveBack()
+	s.g.wallHax(&bs[0].p)
+	for j := uint16(1); j < i; j++ {
+		bs[j] = bs[j-1]
+		bs[j].moveBack()
+		s.g.wallHax(&bs[j].p)
 	}
+	return
 }
 
 func (s *snake) initialize() {

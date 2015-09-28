@@ -25,6 +25,9 @@ Controls:
         P2 is wasd
         P3 is yghj
         P4 is pl;'
+  t to pause (and unpause)
+  r to restart
+  q to quit
 `)
 	}
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")
@@ -103,6 +106,8 @@ Controls:
 			g.printSnakes()
 			// start listening for input again
 			g.restart <- struct{}{}
+		case <-g.pause:
+			<-g.pause
 		default:
 			//no exit
 		}

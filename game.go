@@ -26,6 +26,7 @@ type game struct {
 	origin    position
 	speed     time.Duration
 	restart   chan struct{}
+	pause     chan struct{}
 }
 
 func (g *game) start(i uint) {
@@ -36,6 +37,7 @@ func (g *game) start(i uint) {
 }
 func (g *game) initialize() {
 	g.restart = make(chan struct{})
+	g.pause = make(chan struct{})
 	g.s = make([]snake, g.players)
 	g.food = make([]position, g.players)
 	g.printGround()
@@ -204,6 +206,16 @@ func (g *game) processInput() {
 				changeDir(3, down)
 			case 'l':
 				changeDir(3, left)
+			case 't':
+				g.pause <- struct{}{}
+				for {
+					read()
+					if b[0] == 't' {
+						g.pause <- struct{}{}
+						break
+					}
+
+				}
 			case 'r':
 				g.restart <- struct{}{}
 				<-g.restart

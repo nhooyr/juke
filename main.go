@@ -80,13 +80,22 @@ func main() {
 		os.Exit(0)
 	}
 	log.SetPrefix(NORMAL + "goSnake: ")
-	// start game
+	// initialize game
 	g.initialize()
 	for {
-		g.moveTo(position{g.h - 1, g.w - 1})
 		time.Sleep(time.Second / g.speed)
 		g.moveSnakes()
 		g.checkCollisions()
-		g.printSnakes()
+		g.updateSnakes()
+		g.moveTo(position{g.h - 1, g.w - 1})
+		select {
+		case <-g.exit:
+			g.clearInGround()
+			g.start()
+			g.restarted <- struct{}{}
+			continue
+		default:
+			//no exit
+		}
 	}
 }

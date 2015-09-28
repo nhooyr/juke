@@ -25,20 +25,27 @@ type game struct {
 	players   uint
 	origin    position
 	speed     time.Duration
+	exit      chan struct{}
+	restarted chan struct{}
 }
 
-func (g *game) initialize() {
-	g.printGround()
-	g.s = make([]snake, g.players)
+func (g *game) start() {
 	for i := uint(0); i < g.players; i++ {
 		g.s[i].g = g
-		g.s[i].initialize(i)
+		g.s[i].player = i
+		g.s[i].dead = false
+		g.s[i].initialize()
+		g.addFood(int(i))
 	}
 	g.printInitialSnakes()
+}
+func (g *game) initialize() {
+	g.exit = make(chan struct{})
+	g.restarted = make(chan struct{})
+	g.s = make([]snake, g.players)
 	g.food = make([]position, g.players)
-	for i, _ := range g.food {
-		g.addFood(i)
-	}
+	g.printGround()
+	g.start()
 	go g.processInput()
 }
 
@@ -103,23 +110,30 @@ func (g *game) setDimensions() {
 	}
 }
 
+func (g *game) clearInGround() {
+	for i := uint(0); i < g.players; i++ {
+		g.s[i].printOverAll(" ")
+		g.moveTo(g.food[i])
+		os.Stdout.WriteString(" ")
+	}
+}
+
 // print current ground
 func (g *game) printGround() {
-	g.moveTo(position{g.rowOffSet, 0})
-	for i := uint16(0); i < g.h; i++ {
-		for j := uint16(0); j < g.w; j++ {
+	for y := uint16(0); y < g.h; y++ {
+		for x := uint16(0); x < g.w; x++ {
 			switch {
-			case (i == g.h-1 || i == 0) && (j == 0 || j == g.w-1):
+			case (y == g.h-1 || y == 0) && (x == 0 || x == g.w-1):
 				os.Stdout.WriteString("┼")
-			case i == 0 || i == g.h-1:
+			case y == 0 || y == g.h-1:
 				os.Stdout.WriteString("─")
-			case j == 0 || j == g.w-1:
+			case x == 0 || x == g.w-1:
 				os.Stdout.WriteString("│")
 			default:
-				g.moveTo(position{i + g.rowOffSet, g.w - 1})
+				g.moveTo(position{y + g.rowOffSet, g.w - 1})
 			}
 		}
-		if i < g.h-1 {
+		if y < g.h-1 {
 			os.Stdout.WriteString("\n")
 		}
 	}
@@ -140,8 +154,10 @@ func (g *game) processInput() {
 		}
 	}
 	defer func() {
-		log.Println(recover())
-		g.sigs <- syscall.SIGTERM
+		if r := recover(); r != nil {
+			log.Println(r)
+			g.sigs <- syscall.SIGTERM
+		}
 	}()
 	changeDir := func(s uint, dir uint16) {
 		if g.players <= s || g.s[s].dead == true || prevDir[s] == dir {
@@ -189,18 +205,21 @@ func (g *game) processInput() {
 				changeDir(3, down)
 			case 'l':
 				changeDir(3, left)
-			case 10:
+			case 'r':
+				g.exit <- struct{}{}
+				<-g.restarted
+			case 'q':
+				g.sigs <- syscall.SIGTERM
 				return
 			}
-			// TODO proper restart
 		}
 	}
 }
 
-func (g *game) printSnakes() {
+func (g *game) updateSnakes() {
 	for i := uint(0); i < g.players; i++ {
 		if g.s[i].dead == false {
-			g.s[i].print()
+			g.s[i].update()
 		}
 	}
 }
@@ -208,14 +227,14 @@ func (g *game) printSnakes() {
 func (g *game) printInitialSnakes() {
 	for i := uint(0); i < g.players; i++ {
 		if g.s[i].dead == false {
-			g.s[i].initalPrint()
+			g.s[i].printOverAll("=")
 		}
 	}
 }
 
 func (g *game) moveSnakes() {
-	for i, _ := range g.s {
-		for j, _ := range g.food {
+	for i := uint(0); i < g.players; i++ {
+		for j := 0; uint(j) < g.players; j++ {
 			if g.s[i].bs[0].p == g.food[j] {
 				g.s[i].appendBlocks(g.foodVal)
 				g.addFood(j)
@@ -234,10 +253,10 @@ func (g *game) checkCollisions() {
 		if rand.Intn(2) == 0 {
 			*inc = 1
 			*min = 0
-			*end = len(g.s)
+			*end = int(g.players)
 		} else {
 			*inc = -1
-			*min = len(g.s) - 1
+			*min = int(g.players) - 1
 			*end = -1
 		}
 

@@ -44,18 +44,20 @@ func (s *snake) printColor() {
 	}
 }
 
-func (s *snake) initalPrint() {
-	s.printColor()
+func (s *snake) printOverAll(p string) {
+	if p != " " {
+		s.printColor()
+	}
 	for i, _ := range s.bs {
 		s.g.moveTo(s.bs[i].p)
-		os.Stdout.WriteString("=")
+		os.Stdout.WriteString(p)
 	}
 }
 
-func (s *snake) print() {
+func (s *snake) update() {
 	if !s.on(s.oldBs[len(s.oldBs)-1].p, len(s.bs)-1, -1, -1) {
 		var used bool
-		for i, _ := range s.g.s {
+		for i := uint(0); i < s.g.players; i++ {
 			if uint(i) == s.player {
 				continue
 			}
@@ -80,12 +82,8 @@ func (s *snake) die() {
 	s.Lock()
 	s.bs = s.oldBs
 	s.Unlock()
-	s.printColor()
 	s.dead = true
-	for i, _ := range s.bs {
-		s.g.moveTo(s.bs[i].p)
-		os.Stdout.WriteString("x")
-	}
+	s.printOverAll("x")
 }
 
 func (s *snake) on(p position, min, end, inc int) bool {
@@ -152,10 +150,9 @@ func (s *snake) appendBlocks(i uint16) {
 	}
 }
 
-func (s *snake) initialize(player uint) {
+func (s *snake) initialize() {
 	s.bs = make([]block, 1)
 	s.oldBs = s.bs
-	s.player = player
 	s.bs[0].d = right
 	switch s.player {
 	case 0:

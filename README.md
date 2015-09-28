@@ -15,10 +15,10 @@ Type
 for help instructions
 
 ###TODO
+RESTART BUTTON
+
 net multiplayer
 
 more powerups
-
-RESTART BUTTON
 
 figure out minimum size

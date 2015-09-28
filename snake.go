@@ -103,6 +103,7 @@ func (s *snake) update() {
 	s.g.moveTo(s.bs[0].p)
 	os.Stdout.WriteString("=")
 }
+
 func (s *snake) die() {
 	s.Lock()
 	s.bs = s.oldBs

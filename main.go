@@ -67,7 +67,7 @@ func main() {
 	}
 
 	g.setDimensions()
-	maxInit := g.w/3/2
+	maxInit := g.w/3
 	if g.init > maxInit {
 		log.Println("init too big, max init size for this width is", maxInit)
 		cleanup()

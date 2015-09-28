@@ -36,6 +36,19 @@ func (b *block) moveBack() {
 
 }
 
+func (b *block) moveForward() {
+	switch b.d {
+	case up:
+		b.p.y -= 1
+	case right:
+		b.p.x += 1
+	case down:
+		b.p.y += 1
+	case left:
+		b.p.x -= 1
+	}
+}
+
 type snake struct {
 	bs    []block
 	oldBs []block
@@ -63,27 +76,25 @@ func (s *snake) printOverAll(p string) {
 		s.printColor()
 	}
 	for i, _ := range s.bs {
+		if s.on(s.bs[i].p, i-1, -1, -1) {
+			continue
+		}
 		s.g.moveTo(s.bs[i].p)
 		os.Stdout.WriteString(p)
 	}
 }
 
 func (s *snake) update() {
-	if !s.on(s.oldBs[len(s.oldBs)-1].p, len(s.bs)-1, -1, -1) {
-		var used bool
-		for i := uint(0); i < s.g.players; i++ {
-			if uint(i) == s.player {
-				continue
-			}
-			if s.g.s[i].on(s.oldBs[len(s.oldBs)-1].p, 0, len(s.g.s[i].bs), 1) {
-				used = true
-				break
-			}
+	var used bool
+	for i := uint(0); i < s.g.players; i++ {
+		if s.g.s[i].on(s.oldBs[len(s.oldBs)-1].p, 0, len(s.g.s[i].bs), 1) {
+			used = true
+			break
 		}
-		if used == false {
-			s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
-			os.Stdout.WriteString(" ")
-		}
+	}
+	if used == false {
+		s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
+		os.Stdout.WriteString(" ")
 	}
 	if s.on(s.bs[0].p, 1, len(s.bs), 1) {
 		return
@@ -117,16 +128,7 @@ func (s *snake) move() {
 	}
 	copy(s.oldBs, s.bs)
 	for i := len(s.bs) - 1; i >= 0; i-- {
-		switch s.bs[i].d {
-		case up:
-			s.bs[i].p.y -= 1
-		case right:
-			s.bs[i].p.x += 1
-		case down:
-			s.bs[i].p.y += 1
-		case left:
-			s.bs[i].p.x -= 1
-		}
+		s.bs[i].moveForward()
 		if i != 0 {
 			s.bs[i].d = s.bs[i-1].d
 		}
@@ -171,8 +173,7 @@ func (s *snake) initialize() {
 		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2+s.g.w/3/2, s.g.h/3*2
 	}
 	for i := uint16(1); i < s.g.init; i++ {
-		s.bs[i] = s.bs[len(s.bs)-1]
-		s.bs[i].d = s.bs[len(s.bs)-1].d
+		s.bs[i] = s.bs[i-1]
 		s.bs[i].moveBack()
 		s.g.wallHax(&s.bs[i].p)
 	}

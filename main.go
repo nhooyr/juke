@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -14,12 +15,24 @@ func main() {
 	g := new(game)
 	log.SetPrefix("goSnake: ")
 	log.SetFlags(0)
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+		os.Stderr.WriteString(`
+Controls:
+  Pn up, down, left, right
+        P1 is ↑←→↓ (arrow keys)
+        P2 is wasd
+        P3 is yghj
+        P4 is pl;'
+`)
+	}
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")
 	tmpw := flag.Uint("w", 0, "width of playground (default width of tty)")
 	tmpi := flag.Uint("i", 3, "initital size of snake")
 	tmps := flag.Int64("s", 20, "unit's per second for snake")
 	tmpf := flag.Int64("f", 1, "how many blocks each food adds")
-	flag.UintVar(&g.players, "p", 1, "number of players; controls: P1: arrows, P2: wasd, P3: yghj, P4: pl;'")
+	flag.UintVar(&g.players, "p", 1, "number of players")
 	flag.Parse()
 	if g.players > 4 {
 		log.Fatal("cannot be more than 4 players")

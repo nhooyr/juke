@@ -155,13 +155,13 @@ func (s *snake) initialize() {
 	s.bs[0].d = right
 	switch s.player {
 	case 0:
-		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2, s.g.h/3
+		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2+s.g.w/3/2, s.g.h/3
 	case 1:
 		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3, s.g.h/3
 	case 2:
 		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3, s.g.h/3*2
 	case 3:
-		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2, s.g.h/3*2
+		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2+s.g.w/3/2, s.g.h/3*2
 	}
 	s.appendBlocks(s.g.init - 1)
 }

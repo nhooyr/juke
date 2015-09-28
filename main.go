@@ -67,15 +67,9 @@ func main() {
 	}
 
 	g.setDimensions()
-
-	var maxInit uint16
-	if g.players == 1 {
-		maxInit = g.w/3 - 1
-	} else {
-		maxInit = g.w/3 - 1
-	}
+	maxInit := g.w/3/2
 	if g.init > maxInit {
-		log.Println("init too big, max init size for this h/w is", maxInit)
+		log.Println("init too big, max init size for this width is", maxInit)
 		cleanup()
 		os.Exit(0)
 	}

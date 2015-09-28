@@ -5,50 +5,6 @@ import (
 	"sync"
 )
 
-const (
-	up = iota + 1
-	down
-	right
-	left
-)
-
-type position struct {
-	y uint16
-	x uint16
-}
-
-type block struct {
-	d uint16
-	p position
-}
-
-func (b *block) moveBack() {
-	switch b.d {
-	case up:
-		b.p.y += 1
-	case right:
-		b.p.x -= 1
-	case down:
-		b.p.y -= 1
-	case left:
-		b.p.x += 1
-	}
-
-}
-
-func (b *block) moveForward() {
-	switch b.d {
-	case up:
-		b.p.y -= 1
-	case right:
-		b.p.x += 1
-	case down:
-		b.p.y += 1
-	case left:
-		b.p.x -= 1
-	}
-}
-
 type snake struct {
 	bs    []block
 	oldBs []block
@@ -96,7 +52,12 @@ func (s *snake) update() {
 		s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
 		os.Stdout.WriteString(" ")
 	}
-	s.printOverAll("=")
+	if s.on(s.bs[0].p, 1, len(s.bs), 1) {
+		return
+	}
+	s.printColor()
+	s.g.moveTo(s.bs[0].p)
+	os.Stdout.WriteString("=")
 }
 
 func (s *snake) die() {

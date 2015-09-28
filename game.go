@@ -251,6 +251,10 @@ func (g *game) moveSnakes() {
 	}
 }
 
+func (b *block) printOverBlocks(){
+
+}
+
 func (g *game) checkFood() {
 	for i := uint(0); i < g.players; i++ {
 		for j := 0; uint(j) < g.players; j++ {

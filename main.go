@@ -20,7 +20,7 @@ func main() {
 		flag.PrintDefaults()
 		os.Stderr.WriteString(`
 Controls:
-  Pn up, down, left, right
+  Pn is up, down, left, right
         P1 is ↑←→↓ (arrow keys)
         P2 is wasd
         P3 is yghj

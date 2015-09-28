@@ -230,6 +230,11 @@ func (g *game) printAllSnakes() {
 
 func (g *game) moveSnakes() {
 	for i := uint(0); i < g.players; i++ {
+		if g.s[i].dead == false {
+			g.s[i].move()
+		}
+	}
+	for i := uint(0); i < g.players; i++ {
 		for j := 0; uint(j) < g.players; j++ {
 			if g.s[i].bs[0].p == g.food[j] {
 				g.s[i].Lock()
@@ -237,9 +242,6 @@ func (g *game) moveSnakes() {
 				g.s[i].Unlock()
 				g.addFood(j)
 			}
-		}
-		if g.s[i].dead == false {
-			g.s[i].move()
 		}
 	}
 }

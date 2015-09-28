@@ -104,7 +104,6 @@ Controls:
 				g.start(i)
 			}
 			g.printSnakes()
-			// start listening for input again
 			g.restart <- struct{}{}
 		case <-g.pause:
 			<-g.pause

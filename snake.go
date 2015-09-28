@@ -96,12 +96,7 @@ func (s *snake) update() {
 		s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
 		os.Stdout.WriteString(" ")
 	}
-	if s.on(s.bs[0].p, 1, len(s.bs), 1) {
-		return
-	}
-	s.printColor()
-	s.g.moveTo(s.bs[0].p)
-	os.Stdout.WriteString("=")
+	s.printOverAll("=")
 }
 
 func (s *snake) die() {
@@ -121,13 +116,17 @@ func (s *snake) on(p position, min, end, inc int) bool {
 	return false
 }
 
-func (s *snake) move() {
+func (s *snake) syncOldBsandBs(){
 	if len(s.bs) != len(s.oldBs) {
 		for i := len(s.bs); i > len(s.oldBs)-1; i-- {
 			s.oldBs = append(s.oldBs, block{})
 		}
 	}
 	copy(s.oldBs, s.bs)
+}
+
+func (s *snake) move() {
+	s.syncOldBsandBs()
 	for i := len(s.bs) - 1; i >= 0; i-- {
 		s.bs[i].moveForward()
 		if i != 0 {

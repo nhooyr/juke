@@ -22,6 +22,20 @@ type block struct {
 	p position
 }
 
+func (b *block) moveBack() {
+	switch b.d {
+	case up:
+		b.p.y += 1
+	case right:
+		b.p.x -= 1
+	case down:
+		b.p.y -= 1
+	case left:
+		b.p.x += 1
+	}
+
+}
+
 type snake struct {
 	bs    []block
 	oldBs []block
@@ -96,8 +110,11 @@ func (s *snake) on(p position, min, end, inc int) bool {
 }
 
 func (s *snake) move() {
-	s.Lock()
-	s.oldBs = make([]block, len(s.bs))
+	if len(s.bs) != len(s.oldBs) {
+		for i := len(s.bs); i > len(s.oldBs)-1; i-- {
+			s.oldBs = append(s.oldBs, block{})
+		}
+	}
 	copy(s.oldBs, s.bs)
 	for i := len(s.bs) - 1; i >= 0; i-- {
 		switch s.bs[i].d {
@@ -115,7 +132,6 @@ func (s *snake) move() {
 		}
 		s.g.wallHax(&s.bs[i].p)
 	}
-	s.Unlock()
 }
 
 func (g *game) wallHax(p *position) {
@@ -134,24 +150,15 @@ func (g *game) wallHax(p *position) {
 func (s *snake) appendBlocks(i uint16) {
 	for j := uint16(0); j < i; j++ {
 		b := s.bs[len(s.bs)-1]
-		b.d = s.bs[len(s.bs)-1].d
-		switch b.d {
-		case up:
-			b.p.y += 1
-		case right:
-			b.p.x -= 1
-		case down:
-			b.p.y -= 1
-		case left:
-			b.p.x += 1
-		}
+		b.moveBack()
 		s.g.wallHax(&b.p)
 		s.bs = append(s.bs, b)
 	}
 }
 
 func (s *snake) initialize() {
-	s.bs = make([]block, 1)
+	s.bs = make([]block, s.g.init)
+	s.oldBs = make([]block, s.g.init)
 	s.bs[0].d = right
 	switch s.player {
 	case 0:
@@ -163,5 +170,10 @@ func (s *snake) initialize() {
 	case 3:
 		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2+s.g.w/3/2, s.g.h/3*2
 	}
-	s.appendBlocks(s.g.init - 1)
+	for i := uint16(1); i < s.g.init; i++ {
+		s.bs[i] = s.bs[len(s.bs)-1]
+		s.bs[i].d = s.bs[len(s.bs)-1].d
+		s.bs[i].moveBack()
+		s.g.wallHax(&s.bs[i].p)
+	}
 }

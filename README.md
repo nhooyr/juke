@@ -22,5 +22,3 @@ more powerups
 documentation
 
 proper interface
-
-minimum h/w

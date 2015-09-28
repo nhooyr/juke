@@ -25,27 +25,24 @@ type game struct {
 	players   uint
 	origin    position
 	speed     time.Duration
-	exit      chan struct{}
-	restarted chan struct{}
+	restart   chan struct{}
 }
 
-func (g *game) start() {
-	for i := uint(0); i < g.players; i++ {
-		g.s[i].g = g
-		g.s[i].player = i
-		g.s[i].dead = false
-		g.s[i].initialize()
-		g.addFood(int(i))
-	}
-	g.printInitialSnakes()
+func (g *game) start(i uint) {
+	g.s[i].g = g
+	g.s[i].player = i
+	g.s[i].initialize()
+	g.addFood(int(i))
 }
 func (g *game) initialize() {
-	g.exit = make(chan struct{})
-	g.restarted = make(chan struct{})
+	g.restart = make(chan struct{})
 	g.s = make([]snake, g.players)
 	g.food = make([]position, g.players)
 	g.printGround()
-	g.start()
+	for i := uint(0); i < g.players; i++ {
+		g.start(i)
+	}
+	g.printInitialSnakes()
 	go g.processInput()
 }
 
@@ -110,12 +107,11 @@ func (g *game) setDimensions() {
 	}
 }
 
-func (g *game) clearInGround() {
-	for i := uint(0); i < g.players; i++ {
-		g.s[i].printOverAll(" ")
-		g.moveTo(g.food[i])
-		os.Stdout.WriteString(" ")
-	}
+func (g *game) clear(i uint) {
+	g.s[i].printOverAll(" ")
+	g.s[i].dead = false
+	g.moveTo(g.food[i])
+	os.Stdout.WriteString(" ")
 }
 
 // print current ground
@@ -206,8 +202,8 @@ func (g *game) processInput() {
 			case 'l':
 				changeDir(3, left)
 			case 'r':
-				g.exit <- struct{}{}
-				<-g.restarted
+				g.restart <- struct{}{}
+				<-g.restart
 			case 'q':
 				g.sigs <- syscall.SIGTERM
 				return

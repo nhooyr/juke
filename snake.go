@@ -152,7 +152,6 @@ func (s *snake) appendBlocks(i uint16) {
 
 func (s *snake) initialize() {
 	s.bs = make([]block, 1)
-	s.oldBs = s.bs
 	s.bs[0].d = right
 	switch s.player {
 	case 0:

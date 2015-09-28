@@ -84,18 +84,21 @@ func main() {
 	g.initialize()
 	for {
 		time.Sleep(time.Second / g.speed)
+		select {
+		case <-g.restart:
+			for i := uint(0); i < g.players; i++ {
+				g.clear(i)
+				g.start(i)
+			}
+			g.printInitialSnakes()
+			// start listening for input again
+			g.restart <- struct{}{}
+		default:
+			//no exit
+		}
 		g.moveSnakes()
 		g.checkCollisions()
 		g.updateSnakes()
 		g.moveTo(position{g.h - 1, g.w - 1})
-		select {
-		case <-g.exit:
-			g.clearInGround()
-			g.start()
-			g.restarted <- struct{}{}
-			continue
-		default:
-			//no exit
-		}
 	}
 }

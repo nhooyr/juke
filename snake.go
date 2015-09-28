@@ -87,7 +87,7 @@ func (s *snake) printOverAll(p string) {
 func (s *snake) update() {
 	var used bool
 	for i := uint(0); i < s.g.players; i++ {
-		if s.g.s[i].on(s.oldBs[len(s.oldBs)-1].p, 0, len(s.g.s[i].bs), 1) || s.g.food[i] == s.oldBs[len(s.oldBs)-1].p {
+		if s.g.s[i].on(s.oldBs[len(s.oldBs)-1].p, 0, len(s.g.s[i].bs), 1) {
 			used = true
 			break
 		}

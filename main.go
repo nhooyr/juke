@@ -67,7 +67,7 @@ func main() {
 	}
 
 	g.setDimensions()
-	maxInit := g.w/3
+	maxInit := g.w / 3
 	if g.init > maxInit {
 		log.Println("init too big, max init size for this width is", maxInit)
 		cleanup()
@@ -77,19 +77,19 @@ func main() {
 	// initialize game
 	g.initialize()
 	for {
-		time.Sleep(time.Second / g.speed)
 		select {
 		case <-g.restart:
 			for i := uint(0); i < g.players; i++ {
 				g.clear(i)
 				g.start(i)
 			}
-			g.printInitialSnakes()
+			g.printAllSnakes()
 			// start listening for input again
 			g.restart <- struct{}{}
 		default:
 			//no exit
 		}
+		time.Sleep(time.Second / g.speed)
 		g.moveSnakes()
 		g.checkCollisions()
 		g.updateSnakes()

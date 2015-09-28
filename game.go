@@ -42,7 +42,7 @@ func (g *game) initialize() {
 	for i := uint(0); i < g.players; i++ {
 		g.start(i)
 	}
-	g.printInitialSnakes()
+	g.printAllSnakes()
 	go g.processInput()
 }
 
@@ -220,7 +220,7 @@ func (g *game) updateSnakes() {
 	}
 }
 
-func (g *game) printInitialSnakes() {
+func (g *game) printAllSnakes() {
 	for i := uint(0); i < g.players; i++ {
 		if g.s[i].dead == false {
 			g.s[i].printOverAll("=")

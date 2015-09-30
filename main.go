@@ -99,14 +99,14 @@ Controls:
 	for {
 		select {
 		case <-g.restart:
-			for i := uint(0); i < g.players; i++ {
-				g.clear(i)
-				g.start(i)
-			}
-			g.printSnakes()
-			g.restart <- struct{}{}
+			g.nextGame()
 		case <-g.pause:
-			<-g.pause
+			select {
+			case <-g.pause:
+				// unpause
+			case <-g.restart:
+				g.nextGame()
+			}
 		default:
 			//no exit
 		}

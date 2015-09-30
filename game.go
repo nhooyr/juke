@@ -29,6 +29,14 @@ type game struct {
 	pause     chan struct{}
 }
 
+func (g *game) nextGame() {
+	for i := uint(0); i < g.players; i++ {
+		g.clear(i)
+		g.start(i)
+	}
+	g.printSnakes()
+}
+
 func (g *game) start(i uint) {
 	g.s[i].g = g
 	g.s[i].player = i
@@ -207,19 +215,8 @@ func (g *game) processInput() {
 				changeDir(3, left)
 			case 't':
 				g.pause <- struct{}{}
-				for {
-					read()
-					if b[0] == 't' {
-						g.pause <- struct{}{}
-						break
-					} else if b[0] == 'q' {
-						g.sigs <- syscall.SIGTERM
-
-					}
-				}
 			case 'r':
 				g.restart <- struct{}{}
-				<-g.restart
 			case 'q':
 				g.sigs <- syscall.SIGTERM
 			}

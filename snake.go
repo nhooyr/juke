@@ -6,12 +6,12 @@ import (
 )
 
 type snake struct {
-	bs    []block
-	oldBs []block
-	g     *game
-	dead  bool
-	sync.Mutex
+	bs     []block
+	oldBs  []block
+	g      *game
+	dead   bool
 	player uint
+	sync.Mutex
 }
 
 func (s *snake) printColor() {

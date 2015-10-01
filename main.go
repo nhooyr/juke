@@ -13,7 +13,7 @@ import (
 
 func main() {
 	g := new(game)
-	log.SetPrefix(NORMAL + "juke: ")
+	log.SetPrefix("juke: ")
 	log.SetFlags(0)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -93,6 +93,7 @@ Controls:
 		cleanup()
 		log.Fatalln("init too big, max init size for this width is", maxInit)
 	}
+	log.SetPrefix(NORMAL + "juke: ")
 	// initialize game
 	g.initialize()
 	for {

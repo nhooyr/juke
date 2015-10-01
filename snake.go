@@ -1,17 +1,14 @@
 package main
 
-import (
-	"os"
-	"sync"
-)
+import "os"
 
 type snake struct {
-	bs    []block
-	oldBs []block
-	g     *game
-	dead  bool
-	sync.Mutex
+	bs     []block
+	oldBs  []block
+	g      *game
+	dead   bool
 	player uint
+	input  chan uint16
 }
 
 func (s *snake) printColor() {
@@ -54,9 +51,7 @@ func (s *snake) update() {
 }
 
 func (s *snake) die() {
-	s.Lock()
 	s.bs = s.oldBs
-	s.Unlock()
 	s.dead = true
 	s.printOverAll("x")
 }
@@ -82,6 +77,11 @@ func (s *snake) syncOldBsandBs() {
 
 func (s *snake) move() {
 	s.syncOldBsandBs()
+	select {
+	case s.bs[0].d = <-s.input:
+	default:
+		// no input
+	}
 	for i := len(s.bs) - 1; i >= 0; i-- {
 		s.bs[i].moveForward()
 		if i != 0 {
@@ -118,6 +118,7 @@ func (s *snake) appendBlocks(i uint16) (bs []block) {
 }
 
 func (s *snake) initialize() {
+	s.input = make(chan uint16, 2)
 	s.bs = make([]block, s.g.init)
 	s.oldBs = make([]block, s.g.init)
 	s.bs[0].d = right

@@ -171,11 +171,9 @@ func (g *game) processInput() {
 		if g.players <= s || g.s[s].dead == true || prevDir[s] == dir {
 			return
 		}
-		select {
-		case g.s[s].input <- dir:
-		default:
-			// buffer full
-		}
+		g.s[s].Lock()
+		g.s[s].bs[0].d = dir
+		g.s[s].Unlock()
 	}
 	for {
 		read()
@@ -262,7 +260,9 @@ func (g *game) checkFood() {
 						os.Stdout.WriteString("=")
 					}
 				}
+				g.s[i].Lock()
 				g.s[i].bs = append(g.s[i].bs, bs...)
+				g.s[i].Unlock()
 				g.addFood(j)
 			}
 		}

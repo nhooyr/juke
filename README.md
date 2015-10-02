@@ -23,3 +23,5 @@ more powerups
 documentation
 
 proper interface
+
+perfect generation of blocks in back (if they go into other snakes)

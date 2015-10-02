@@ -70,7 +70,7 @@ func (s *snake) on(p position, min, end, inc int) bool {
 	return false
 }
 
-func (s *snake) syncOldBsandBs() {
+func (s *snake) copyBsInOldBs() {
 	if len(s.bs) != len(s.oldBs) {
 		min := len(s.oldBs)
 		for i := len(s.bs); i > min; i-- {
@@ -81,7 +81,7 @@ func (s *snake) syncOldBsandBs() {
 }
 
 func (s *snake) move() {
-	s.syncOldBsandBs()
+	s.copyBsInOldBs()
 	for i := len(s.bs) - 1; i >= 0; i-- {
 		s.bs[i].moveForward()
 		if i != 0 {

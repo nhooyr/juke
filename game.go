@@ -34,6 +34,9 @@ func (g *game) nextGame() {
 		g.clear(i)
 		g.start(i)
 	}
+	for i := 0; uint(i) < g.players; i++ {
+		g.addFood(i)
+	}
 	g.printSnakes()
 }
 
@@ -41,7 +44,6 @@ func (g *game) start(i uint) {
 	g.s[i].g = g
 	g.s[i].player = i
 	g.s[i].initialize()
-	g.addFood(int(i))
 }
 func (g *game) initialize() {
 	g.restart = make(chan struct{})
@@ -52,18 +54,21 @@ func (g *game) initialize() {
 	for i := uint(0); i < g.players; i++ {
 		g.start(i)
 	}
+	for i := 0; uint(i) < g.players; i++ {
+		g.addFood(i)
+	}
 	g.printSnakes()
 	go g.processInput()
 }
 
-func (g *game) getValidFoodPos() (vp []position) {
+func (g *game) getValidFoodPos(i int) (vp []position) {
 	vp = []position{}
 	for y := uint16(1); y < g.h-1; y++ {
 	xLoop:
 		for x := uint16(1); x < g.w-1; x++ {
 			for s := uint(0); s < g.players; s++ {
 				for f := 0; uint(f) < g.players; f++ {
-					if g.food[f] == (position{y, x}) || g.s[s].on(position{y, x}, 0, len(g.s[s].bs), 1) {
+					if f != i && (g.food[f] == (position{y, x}) || g.s[s].on(position{y, x}, 0, len(g.s[s].bs), 1)) {
 						continue xLoop
 					}
 				}
@@ -75,7 +80,7 @@ func (g *game) getValidFoodPos() (vp []position) {
 }
 
 func (g *game) addFood(i int) {
-	vp := g.getValidFoodPos()
+	vp := g.getValidFoodPos(i)
 	if len(vp) == 0 {
 		return
 	}
@@ -122,6 +127,10 @@ func (g *game) setDimensions() {
 func (g *game) clear(i uint) {
 	g.s[i].printOverAll(" ")
 	g.s[i].dead = false
+	// if y is 0 it means its not initialized (get RID OF THIS) TODO
+	if g.food[i].y == 0 {
+		return
+	}
 	g.moveTo(g.food[i])
 	os.Stdout.WriteString(" ")
 }
@@ -296,6 +305,8 @@ func (g *game) checkCollisions() {
 				// first check if any of j is on the first block of i, then if len of i's bs is just one, make sure their first elements are opposite dir and then check if i is on any of j's oldBs or if i is on any of j's new Bs (this is needed for when one is len of just 1 and the other is greater, eg 2)
 				if g.s[j].on(g.s[i].bs[0].p, 0, len(g.s[j].bs), 1) || (len(g.s[i].bs) == 1 && oppositeDir(g.s[i].bs[0].d, g.s[j].bs[0].d) && (g.s[i].on(g.s[j].oldBs[0].p, 0, len(g.s[i].bs), 1) || g.s[j].on(g.s[i].oldBs[0].p, 0, len(g.s[j].bs), 1))) {
 					g.s[i].die()
+					g.checkCollisions()
+					return
 				}
 			}
 		}

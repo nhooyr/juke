@@ -84,7 +84,7 @@ Controls:
 	}
 
 	g.setDimensions()
-	if g.w < 4 || g.h < 4 {
+	if g.w < 6 || g.h < 4 {
 		cleanup()
 		log.Fatal("width or height cannot be less than 4")
 	}
@@ -96,10 +96,12 @@ Controls:
 	log.SetPrefix(NORMAL + "juke: ")
 	// initialize game
 	g.initialize()
-	for {
+	t := time.NewTimer(time.Second / g.speed)
+	for ;;t.Reset(time.Second / g.speed) {
 		select {
 		case <-g.restart:
 			g.nextGame()
+			continue
 		case <-g.pause:
 			select {
 			case <-g.pause:
@@ -107,10 +109,9 @@ Controls:
 			case <-g.restart:
 				g.nextGame()
 			}
-		default:
-			//no exit
+		case <-t.C:
+			// next frame time
 		}
-		time.Sleep(time.Second / g.speed)
 		g.checkFood()
 		g.moveSnakes()
 		g.checkCollisions()

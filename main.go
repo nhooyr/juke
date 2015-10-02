@@ -96,8 +96,7 @@ Controls:
 	log.SetPrefix(NORMAL + "juke: ")
 	// initialize game
 	g.initialize()
-	t := time.NewTimer(time.Second / g.speed)
-	for ;;t.Reset(time.Second / g.speed) {
+	for t := time.NewTimer(time.Second / g.speed); ; t.Reset(time.Second / g.speed) {
 		select {
 		case <-g.restart:
 			g.nextGame()

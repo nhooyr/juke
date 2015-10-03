@@ -1,5 +1,5 @@
 # juke
-A terminal snake game in which the primary objective is to juke (basically dodge and attack other snakes) other players
+A terminal snake game in which the primary objective is to juke (basically dodge and attack other snakes) other players as well as get fod to make yourself more long.
 
 Install with
 
@@ -15,7 +15,7 @@ Type
 
 for help instructions
 
-**ITS MUCH MUCH MORE FUN WITH FRIENDS, ESPECIALLY IF YOU PLAY WITH ALL THE SETTINGS!**
+**ITS MUCH MUCH MORE FUN WITH FRIENDS, ESPECIALLY IF YOU PLAY AROUND WITH ALL THE SETTINGS!**
 
 ###TODO
 net multiplayer

@@ -170,7 +170,7 @@ func (g *game) loop() {
 }
 
 func (g *game) initialize() {
-	g.restart = make(chan struct{})
+	g.restart = make(chan struct{}, 1)
 	g.pause = make(chan struct{})
 	g.s = make([]snake, g.players)
 	g.f = new(food)
@@ -285,7 +285,11 @@ func (g *game) processInput() {
 			case 't', 'T':
 				g.pause <- struct{}{}
 			case 'r', 'R':
-				g.restart <- struct{}{}
+				select {
+				case g.restart <- struct{}{}:
+				default:
+					// already restarting
+				}
 			case 'q', 'Q':
 				g.sigs <- syscall.SIGTERM
 			}

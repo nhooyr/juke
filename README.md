@@ -1,9 +1,11 @@
 # juke
 A terminal snake game in which the primary objective is to juke (basically dodge and attack other snakes) other players as well as get fod to make yourself more long.
 
+LINUX/OSX
+
 Install with
 
-	go get github.com/aubble/juke
+	go get github.com/nhooyr/juke
 
 As long as $GOPATH/bin is in your path just run it with
 
@@ -18,7 +20,7 @@ Check out the rules/settings/how to play with
 <img src="https://raw.githubusercontent.com/nhooyr/juke/master/screenshot.png" border="0">
 
 ###TODO
-net multiplayer
+network multiplayer
 
 more powerups
 

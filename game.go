@@ -60,7 +60,7 @@ Controls:
   q to quit
 
 Rules:
-    1. You can go through the walls.
+    1. You can go through the walls, you will appear on the other side.
     2. You can go through yourself.
     3. If you touch anyone else with your head you die. E.g
 
@@ -68,13 +68,17 @@ Rules:
      `+ RED+`==`+BLUE+`=
        =
 
-       =
+    `+NORMAL+`Then
+
+       `+BLUE+`=
      `+RED+`xx`+BLUE+`=
        =
 
     `+NORMAL+`4. If both heads hit each other, both snakes die. E.g
 
     `+RED+`==`+BLUE+`==
+
+    `+NORMAL+`Then
 
     `+RED+`xx`+BLUE+`xx
 
@@ -90,7 +94,8 @@ Rules:
     `+RED+`x`+BLUE+`=
 
     `+NORMAL+`6. Food increases the length of the snake but not instantly,
-    it begins to grow by the value of the food.
+    it begins to grow by the value of the food, this is best understood by
+    actually playing the game.
 `)
 	}
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")

@@ -1,5 +1,5 @@
 # juke
-A terminal snake game in which the primary objective is to juke (basically dodge and attack other snakes) other players as well as get fod to make yourself more long.
+A terminal snake game in which the primary objective is to juke (basically dodge and attack other snakes) other players as well as get food to make yourself more long.
 
 **LINUX/OSX ONLY**
 

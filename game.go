@@ -78,7 +78,8 @@ Rules:
 
     `+RED+`xx`+BLUE+`xx
 
-    `+NORMAL+`5. If they both don't hit each other but are going to land on the same square. E.g
+    `+NORMAL+`5. If they both don't hit each other but are going to land
+    on the same square. E.g
 
     `+RED+`=`+NORMAL+`_`+BLUE+`=
 
@@ -88,7 +89,8 @@ Rules:
 
     `+RED+`x`+BLUE+`=
 
-    `+NORMAL+`6. Food increases the length of the snake but not instantly, it begins to grow by the value of the food.
+    `+NORMAL+`6. Food increases the length of the snake but not instantly,
+    it begins to grow by the value of the food.
 `)
 	}
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")

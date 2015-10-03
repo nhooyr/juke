@@ -64,36 +64,36 @@ Rules:
     2. You can go through yourself.
     3. If you touch anyone else with your head you die. E.g
 
-       `+BLUE+`=
-     `+ RED+`==`+BLUE+`=
+       ` + BLUE + `=
+     ` + RED + `==` + BLUE + `=
        =
 
-    `+NORMAL+`Then
+    ` + NORMAL + `Then
 
-       `+BLUE+`=
-     `+RED+`xx`+BLUE+`=
+       ` + BLUE + `=
+     ` + RED + `xx` + BLUE + `=
        =
 
-    `+NORMAL+`4. If both heads hit each other, both snakes die. E.g
+    ` + NORMAL + `4. If both heads hit each other, both snakes die. E.g
 
-    `+RED+`==`+BLUE+`==
+    ` + RED + `==` + BLUE + `==
 
-    `+NORMAL+`Then
+    ` + NORMAL + `Then
 
-    `+RED+`xx`+BLUE+`xx
+    ` + RED + `xx` + BLUE + `xx
 
-    `+NORMAL+`5. If they both don't hit each other but are going to land
+    ` + NORMAL + `5. If they both don't hit each other but are going to land
     on the same square. E.g
 
-    `+RED+`=`+NORMAL+`_`+BLUE+`=
+    ` + RED + `=` + NORMAL + `_` + BLUE + `=
 
-    `+NORMAL+`(_ is square they are both going to land on)
+    ` + NORMAL + `(_ is square they are both going to land on)
 
     Then randomly one is chosen to get the square and the other dies.
 
-    `+RED+`x`+BLUE+`=
+    ` + RED + `x` + BLUE + `=
 
-    `+NORMAL+`6. Food (the A) increases the length of the snake but not instantly,
+    ` + NORMAL + `6. Food (the A) increases the length of the snake but not instantly,
     it begins to grow by the value of the food, this is best understood by
     actually playing the game.
 `)
@@ -395,12 +395,12 @@ func (g *game) checkFood() {
 
 // get dimensions and check if rowOffSet needed
 func (g *game) setDimensions() {
-	dimensions := getDimensions()
+	d := getDimensions()
 	if g.h == 0 {
-		g.h = dimensions[0]
+		g.h = d[0]
 	}
 	if g.w == 0 {
-		g.w = dimensions[1]
+		g.w = d[1]
 	}
 	if g.w < 4 || g.h < 4 {
 		panic("width or height cannot be less than 4")
@@ -410,8 +410,8 @@ func (g *game) setDimensions() {
 		panic(fmt.Sprintf("max init size of snake for this width is %d", uint16(g.wf/3)))
 	}
 	g.hf = float64(g.h - 1)
-	if i := uint16(g.origin.y) + g.h; i > dimensions[0] {
-		g.rowOffSet = i - dimensions[0] - 1
+	if i := uint16(g.origin.y) + g.h; i > d[0] {
+		g.rowOffSet = i - d[0] - 1
 	}
 }
 

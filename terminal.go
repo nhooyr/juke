@@ -34,8 +34,8 @@ func writeTermios(t syscall.Termios) {
 	}
 }
 
-func getDimensions() (dimensions [4]uint16) {
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(os.Stdin.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dimensions)), 0, 0, 0); err != 0 {
+func getDimensions() (d [4]uint16) {
+	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), syscall.TIOCGWINSZ, uintptr(unsafe.Pointer(&d)), 0, 0, 0); err != 0 {
 		panic(err)
 	}
 	return

@@ -9,17 +9,7 @@ As long as $GOPATH/bin is in your path just run it with
 
 	juke
 
-## RULES
-
-You can go through the walls, you can go through yourself, but if you touch anyone else with your head you die. E.g if I hit my head with someone else's snake I die but they live, if both heads hit each other both people die. If they both don't hit but are going to land on the same square e.g
-
-    =_=
-
-(= represent the heads, and _ the square they are both going to land on)
-
-Then randomly one is chosen to get the square and the other dies.
-
-Check out all the settings with
+Check out the rules/settings/how to play with
 
 	juke -help
 

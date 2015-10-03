@@ -1,18 +1,24 @@
 package main
 
 import (
+	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
 	"os"
+	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
-	"unsafe"
 )
 
 type game struct {
 	h         uint16
 	w         uint16
+	hf        float64
+	wf        float64
 	rowOffSet uint16
 	sigs      chan os.Signal
 	s         []snake
@@ -24,6 +30,66 @@ type game struct {
 	speed     time.Duration
 	restart   chan struct{}
 	pause     chan struct{}
+	oldTios   syscall.Termios
+}
+
+func (g *game) captureSignals() {
+	// capture signals
+	g.sigs = make(chan os.Signal)
+	signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-g.sigs
+		os.Stdout.WriteString("\n")
+		g.cleanup()
+		os.Exit(0)
+	}()
+}
+
+func (g *game) cleanup() {
+	// restore text to normal
+	os.Stdout.WriteString(NORMAL)
+	// make cursor visible
+	os.Stdin.WriteString(CURSORVIS)
+	// set tty to normal
+	g.writeTermios(g.oldTios)
+}
+
+func (g *game) parseFlags() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+		os.Stderr.WriteString(`
+Controls:
+  Pn is up, left, down, right
+        P1 is ↑←↓→ (arrow keys)
+        P2 is wasd
+        P3 is yghj
+        P4 is pl;'
+  t to pause (and unpause)
+  r to restart
+  q to quit
+`)
+	}
+	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")
+	tmpw := flag.Uint("w", 0, "width of playground (default width of tty)")
+	tmpi := flag.Uint("i", 3, "initital size of snake")
+	tmpp := flag.Uint("p", 1, "number of players")
+	tmps := flag.Int64("s", 20, "unit's per second for snake")
+	tmpf := flag.Int64("f", 1, "how many blocks each food adds")
+	flag.Parse()
+	if g.players > 4 {
+		log.Fatal("cannot be more than 4 players")
+	}
+	g.h = uint16(*tmph)
+	g.w = uint16(*tmpw)
+	g.init = uint16(*tmpi)
+	if g.init == 0 {
+		log.Fatal("initial size of snake cannot be 0")
+	}
+	g.players = uint16(*tmpp)
+	g.foodVal = uint16(*tmpf)
+	g.speed = time.Duration(*tmps)
+
 }
 
 func (g *game) nextGame() {
@@ -89,19 +155,44 @@ func (g *game) start() {
 	g.loop()
 }
 
-func (g *game) setDimensions() {
-	// get dimensions and check if offset needed
-	var dimensions [4]uint16
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(os.Stdin.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dimensions)), 0, 0, 0); err != 0 {
+func (g *game) setOrigin() {
+	// get cursor position
+	os.Stdin.WriteString(CURSORPOS)
+	r := bufio.NewReader(os.Stdin)
+	p, err := r.ReadString('R')
+	if err != nil {
 		log.Fatal(err)
 	}
+	i := strings.Index(p, ";")
+	row, err := strconv.ParseUint(p[2:i], 10, 16)
+	if err != nil {
+		log.Fatal(err)
+	}
+	col, err := strconv.ParseUint(p[i+1:len(p)-1], 10, 16)
+	if err != nil {
+		log.Fatal(err)
+	}
+	g.origin = position{y: uint16(row), x: uint16(col)}
+}
+
+func (g *game) setDimensions() {
+	// get dimensions and check if offset needed
+	dimensions := g.getDimensions()
 	if g.h == 0 {
 		g.h = dimensions[0]
 	}
 	if g.w == 0 {
 		g.w = dimensions[1]
 	}
-	if i := uint16(g.origin.y) + g.h; i > dimensions[0] {
+	g.hf = float64(g.h - 1)
+	g.wf = float64(g.w - 1)
+	if g.w < 4 || g.h < 4 {
+		g.cleanup()
+		log.Fatal("width or height cannot be less than 4")
+	} else if g.init > uint16(g.wf/3) {
+		g.cleanup()
+		log.Fatalln("init too big, max init size for this width is", uint16(g.wf/3))
+	} else if i := uint16(g.origin.y) + g.h; i > dimensions[0] {
 		g.rowOffSet = i - dimensions[0] - 1
 	}
 }

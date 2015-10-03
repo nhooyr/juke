@@ -121,16 +121,21 @@ func (s *snake) initialize() {
 	s.bs = make([]block, s.g.init)
 	s.oldBs = make([]block, s.g.init)
 	s.bs[0].d = right
+	var cow, coh, offset float64
 	switch s.player {
-	case 0:
-		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2+s.g.w/3/2, s.g.h/3
-	case 1:
-		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3, s.g.h/3
-	case 2:
-		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3, s.g.h/3*2
-	case 3:
-		s.bs[0].p.x, s.bs[0].p.y = s.g.w/3*2+s.g.w/3/2, s.g.h/3*2
+	case 0, 3:
+		cow = 2
+		offset = s.g.wf / 6
+	case 1, 2:
+		cow = 1
 	}
+	switch s.player {
+	case 0, 1:
+		coh = 1
+	case 2, 3:
+		coh = 2
+	}
+	s.bs[0].p.x, s.bs[0].p.y = uint16(s.g.wf/3*cow+offset), uint16(s.g.hf/3*coh)
 	for i := uint16(1); i < s.g.init; i++ {
 		s.bs[i] = s.bs[i-1]
 		s.bs[i].moveBack()

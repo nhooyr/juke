@@ -41,7 +41,7 @@ func (s *snake) printOverAll(p string) {
 }
 
 func (s *snake) update() {
-	if !s.g.checkIfUsed(s.oldBs[len(s.oldBs)-1].p) {
+	if !s.g.isUsed(s.oldBs[len(s.oldBs)-1].p) {
 		s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
 		os.Stdout.WriteString(" ")
 	}

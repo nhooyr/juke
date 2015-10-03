@@ -17,6 +17,8 @@ for help instructions
 
 **ITS MUCH MUCH MORE FUN WITH FRIENDS, ESPECIALLY IF YOU PLAY AROUND WITH ALL THE SETTINGS!**
 
+<img src="https://raw.githubusercontent.com/nhooyr/juke/master/screenshot.png" border="0">
+
 ###TODO
 net multiplayer
 

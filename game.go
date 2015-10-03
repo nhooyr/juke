@@ -93,7 +93,7 @@ Rules:
 
     `+RED+`x`+BLUE+`=
 
-    `+NORMAL+`6. Food increases the length of the snake but not instantly,
+    `+NORMAL+`6. Food (the A) increases the length of the snake but not instantly,
     it begins to grow by the value of the food, this is best understood by
     actually playing the game.
 `)

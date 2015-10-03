@@ -10,7 +10,7 @@ type snake struct {
 	oldBs  []block
 	g      *game
 	dead   bool
-	player uint
+	player uint16
 	sync.Mutex
 }
 

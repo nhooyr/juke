@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"unsafe"
 )
 
 func main() {
@@ -33,9 +32,9 @@ Controls:
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")
 	tmpw := flag.Uint("w", 0, "width of playground (default width of tty)")
 	tmpi := flag.Uint("i", 3, "initital size of snake")
+	tmpp := flag.Uint("p", 1, "number of players")
 	tmps := flag.Int64("s", 20, "unit's per second for snake")
 	tmpf := flag.Int64("f", 1, "how many blocks each food adds")
-	flag.UintVar(&g.players, "p", 1, "number of players")
 	flag.Parse()
 	if g.players > 4 {
 		log.Fatal("cannot be more than 4 players")
@@ -46,45 +45,37 @@ Controls:
 	if g.init == 0 {
 		log.Fatal("initial size of snake cannot be 0")
 	}
+	g.players = uint16(*tmpp)
 	g.foodVal = uint16(*tmpf)
 	g.speed = time.Duration(*tmps)
 
 	// hide cursor
 	os.Stdin.WriteString(CURSORINVIS)
-
 	/// save current termios
-	var old syscall.Termios
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlReadTermios, uintptr(unsafe.Pointer(&old)), 0, 0, 0); err != 0 {
-		log.Fatalln("not a terminal, got:", err)
-	}
+	old := readTermios()
 	cleanup := func() {
 		// restore text to normal
 		os.Stdout.WriteString(NORMAL)
 		// make cursor visible
 		os.Stdin.WriteString(CURSORVIS)
 		// set tty to normal
-		if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlWriteTermios, uintptr(unsafe.Pointer(&old)), 0, 0, 0); err != 0 {
-			log.Fatal(err)
-		}
+		writeTermios(old)
 	}
 	// capture signals
 	g.sigs = make(chan os.Signal)
 	signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-g.sigs
-		cleanup()
 		os.Stdout.WriteString("\n")
+		cleanup()
 		os.Exit(0)
 	}()
-	// set raw mode
 	raw := old
 	raw.Lflag &^= syscall.ECHO | syscall.ICANON
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlWriteTermios, uintptr(unsafe.Pointer(&raw)), 0, 0, 0); err != 0 {
-		log.Fatal(err)
-	}
-
+	writeTermios(raw)
+	g.origin = getCursorPos()
 	g.setDimensions()
-	if g.w < 6 || g.h < 4 {
+	if g.w < 4 || g.h < 4 {
 		cleanup()
 		log.Fatal("width or height cannot be less than 4")
 	}
@@ -94,27 +85,6 @@ Controls:
 		log.Fatalln("init too big, max init size for this width is", maxInit)
 	}
 	log.SetPrefix(NORMAL + "juke: ")
-	// initialize game
-	g.initialize()
-	for t := time.NewTimer(time.Second / g.speed); ; t.Reset(time.Second / g.speed) {
-		select {
-		case <-g.restart:
-			g.nextGame()
-			continue
-		case <-g.pause:
-			select {
-			case <-g.pause:
-				// unpause
-			case <-g.restart:
-				g.nextGame()
-			}
-		case <-t.C:
-			// next frame time
-		}
-		g.checkFood()
-		g.moveSnakes()
-		g.checkCollisions()
-		g.updateSnakes()
-		g.moveTo(position{g.h - 1, g.w - 1})
-	}
+	// start game
+	g.start()
 }

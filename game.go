@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"math/rand"
 	"os"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -20,9 +17,9 @@ type game struct {
 	sigs      chan os.Signal
 	s         []snake
 	foodVal   uint16
-	food      []position
+	f         *food
 	init      uint16
-	players   uint
+	players   uint16
 	origin    position
 	speed     time.Duration
 	restart   chan struct{}
@@ -30,84 +27,69 @@ type game struct {
 }
 
 func (g *game) nextGame() {
-	for i := uint(0); i < g.players; i++ {
-		g.clear(i)
-		g.start(i)
+	for i := uint16(0); i < g.players; i++ {
+		g.clearSnake(i)
+		g.f.clearFood(i)
+		g.s[i].initialize()
 	}
-	for i := 0; uint(i) < g.players; i++ {
-		g.addFood(i)
+	for i := uint16(0); i < g.players; i++ {
+		g.f.addFood(i)
+		g.f.printFood(i)
 	}
 	g.printSnakes()
 }
 
-func (g *game) start(i uint) {
-	g.s[i].g = g
-	g.s[i].player = i
-	g.s[i].initialize()
+func (g *game) loop() {
+	for t := time.NewTimer(time.Second / g.speed); ; t.Reset(time.Second / g.speed) {
+		select {
+		case <-g.restart:
+			g.nextGame()
+			continue
+		case <-g.pause:
+			select {
+			case <-g.pause:
+				// unpause
+			case <-g.restart:
+				g.nextGame()
+			}
+		case <-t.C:
+			// next frame time
+		}
+		g.checkFood()
+		g.moveSnakes()
+		g.checkCollisions()
+		g.updateSnakes()
+		g.moveTo(position{g.h - 1, g.w - 1})
+	}
 }
+
 func (g *game) initialize() {
 	g.restart = make(chan struct{})
 	g.pause = make(chan struct{})
 	g.s = make([]snake, g.players)
-	g.food = make([]position, g.players)
+	g.f = new(food)
+	g.f.p = make([]position, g.players)
+	g.f.g = g
+	for i := uint16(0); i < g.players; i++ {
+		g.s[i].g = g
+		g.s[i].player = i
+		g.s[i].initialize()
+	}
+	for i := uint16(0); i < g.players; i++ {
+		g.f.addFood(i)
+	}
+}
+
+func (g *game) start() {
+	g.initialize()
 	g.printGround()
-	for i := uint(0); i < g.players; i++ {
-		g.start(i)
-	}
-	for i := 0; uint(i) < g.players; i++ {
-		g.addFood(i)
-	}
 	g.printSnakes()
+	g.printAllFood()
 	go g.processInput()
-}
-
-func (g *game) getValidFoodPos(i int) (vp []position) {
-	vp = []position{}
-	for y := uint16(1); y < g.h-1; y++ {
-	xLoop:
-		for x := uint16(1); x < g.w-1; x++ {
-			for s := uint(0); s < g.players; s++ {
-				for f := 0; uint(f) < g.players; f++ {
-					if f != i && (g.food[f] == (position{y, x}) || g.s[s].on(position{y, x}, 0, len(g.s[s].bs), 1)) {
-						continue xLoop
-					}
-				}
-			}
-			vp = append(vp, position{y, x})
-		}
-	}
-	return
-}
-
-func (g *game) addFood(i int) {
-	vp := g.getValidFoodPos(i)
-	if len(vp) == 0 {
-		return
-	}
-	rand.Seed(time.Now().UnixNano())
-	g.food[i] = vp[rand.Intn(len(vp))]
-	g.moveTo(g.food[i])
-	os.Stdout.WriteString(NORMAL + "A")
+	g.loop()
 }
 
 func (g *game) setDimensions() {
-	// get cursor position
-	os.Stdin.WriteString(CURSORPOS)
-	r := bufio.NewReader(os.Stdin)
-	p, err := r.ReadString('R')
-	if err != nil {
-		log.Fatal(err)
-	}
-	i := strings.Index(p, ";")
-	row, err := strconv.ParseUint(p[2:i], 10, 16)
-	if err != nil {
-		log.Fatal(err)
-	}
-	col, err := strconv.ParseUint(p[i+1:len(p)-1], 10, 16)
-	if err != nil {
-		log.Fatal(err)
-	}
-	g.origin = position{y: uint16(row), x: uint16(col)}
 	// get dimensions and check if offset needed
 	var dimensions [4]uint16
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(os.Stdin.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dimensions)), 0, 0, 0); err != 0 {
@@ -119,20 +101,14 @@ func (g *game) setDimensions() {
 	if g.w == 0 {
 		g.w = dimensions[1]
 	}
-	if i := uint16(row) + g.h; i > dimensions[0] {
+	if i := uint16(g.origin.y) + g.h; i > dimensions[0] {
 		g.rowOffSet = i - dimensions[0] - 1
 	}
 }
 
-func (g *game) clear(i uint) {
+func (g *game) clearSnake(i uint16) {
 	g.s[i].printOverAll(" ")
 	g.s[i].dead = false
-	// if y is 0 it means its not initialized (get RID OF THIS) TODO
-	if g.food[i].y == 0 {
-		return
-	}
-	g.moveTo(g.food[i])
-	os.Stdout.WriteString(" ")
 }
 
 // print current ground
@@ -176,7 +152,7 @@ func (g *game) processInput() {
 			g.sigs <- syscall.SIGTERM
 		}
 	}()
-	changeDir := func(s uint, dir uint16) {
+	changeDir := func(s uint16, dir uint16) {
 		if g.players <= s || g.s[s].dead == true || prevDir[s] == dir {
 			return
 		}
@@ -234,7 +210,7 @@ func (g *game) processInput() {
 }
 
 func (g *game) updateSnakes() {
-	for i := uint(0); i < g.players; i++ {
+	for i := uint16(0); i < g.players; i++ {
 		if g.s[i].dead == false {
 			g.s[i].update()
 		}
@@ -242,15 +218,21 @@ func (g *game) updateSnakes() {
 }
 
 func (g *game) printSnakes() {
-	for i := uint(0); i < g.players; i++ {
+	for i := uint16(0); i < g.players; i++ {
 		if g.s[i].dead == false {
 			g.s[i].printOverAll("=")
 		}
 	}
 }
 
+func (g *game) printAllFood() {
+	for i := uint16(0); i < g.players; i++ {
+		g.f.printFood(i)
+	}
+}
+
 func (g *game) moveSnakes() {
-	for i := uint(0); i < g.players; i++ {
+	for i := uint16(0); i < g.players; i++ {
 		if g.s[i].dead == false {
 			g.s[i].move()
 		}
@@ -258,9 +240,9 @@ func (g *game) moveSnakes() {
 }
 
 func (g *game) checkFood() {
-	for i := uint(0); i < g.players; i++ {
-		for j := 0; uint(j) < g.players; j++ {
-			if g.s[i].bs[0].p == g.food[j] {
+	for i := uint16(0); i < g.players; i++ {
+		for j := uint16(0); j < g.players; j++ {
+			if g.s[i].bs[0].p == g.f.p[j] {
 				bs := g.s[i].appendBlocks(g.foodVal)
 				for k := uint16(0); k < g.foodVal; k++ {
 					if !g.checkIfUsed(bs[k].p) {
@@ -272,7 +254,8 @@ func (g *game) checkFood() {
 				g.s[i].Lock()
 				g.s[i].bs = append(g.s[i].bs, bs...)
 				g.s[i].Unlock()
-				g.addFood(j)
+				g.f.addFood(j)
+				g.f.printFood(j)
 			}
 		}
 	}
@@ -327,8 +310,8 @@ func oppositeDir(d1, d2 uint16) bool {
 }
 
 func (g *game) checkIfUsed(p position) bool {
-	for i := uint(0); i < g.players; i++ {
-		if g.s[i].on(p, 0, len(g.s[i].bs), 1) || g.food[i] == p {
+	for i := uint16(0); i < g.players; i++ {
+		if g.s[i].on(p, 0, len(g.s[i].bs), 1) || g.f.p[i] == p {
 			return true
 		}
 	}

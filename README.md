@@ -3,7 +3,7 @@ A terminal snake game in which the primary objective is to juke (basically dodge
 
 **LINUX/OSX ONLY**
 
-I didn't use a library but it should work on any modern terminal emulator that supports xterm
+I didn't use a terminal library but it should work on any modern terminal emulator that supports xterm
 
 Install with
 

@@ -10,6 +10,7 @@ type snake struct {
 	oldBs  []block
 	g      *game
 	dead   bool
+	queued uint16
 	player uint16
 	sync.Mutex
 }
@@ -31,7 +32,7 @@ func (s *snake) printOverAll(p string) {
 	if p != " " {
 		s.printColor()
 	}
-	for i, _ := range s.bs {
+	for i := range s.bs {
 		if s.on(s.bs[i].p, i-1, -1, -1) {
 			continue
 		}
@@ -41,6 +42,9 @@ func (s *snake) printOverAll(p string) {
 }
 
 func (s *snake) update() {
+	if s.dead == true {
+		return
+	}
 	if !s.g.isUsed(s.oldBs[len(s.oldBs)-1].p) {
 		s.g.moveTo(s.oldBs[len(s.oldBs)-1].p)
 		os.Stdout.WriteString(" ")
@@ -81,6 +85,9 @@ func (s *snake) copyBsInOldBs() {
 }
 
 func (s *snake) move() {
+	if s.dead == true {
+		return
+	}
 	s.copyBsInOldBs()
 	for i := len(s.bs) - 1; i >= 0; i-- {
 		s.bs[i].moveForward()
@@ -88,6 +95,12 @@ func (s *snake) move() {
 			s.bs[i].d = s.bs[i-1].d
 		}
 		s.g.wallHax(&s.bs[i].p)
+	}
+	if s.queued != 0 {
+		s.Lock()
+		s.bs = append(s.bs, s.oldBs[len(s.oldBs)-1])
+		s.Unlock()
+		s.queued--
 	}
 }
 
@@ -102,19 +115,6 @@ func (g *game) wallHax(p *position) {
 	case p.x == 0:
 		p.x = g.w - 2
 	}
-}
-
-func (s *snake) appendBlocks(i uint16) (bs []block) {
-	bs = make([]block, i)
-	bs[0] = s.bs[len(s.bs)-1]
-	bs[0].moveBack()
-	s.g.wallHax(&bs[0].p)
-	for j := uint16(1); j < i; j++ {
-		bs[j] = bs[j-1]
-		bs[j].moveBack()
-		s.g.wallHax(&bs[j].p)
-	}
-	return
 }
 
 func (s *snake) initialize() {
@@ -141,4 +141,10 @@ func (s *snake) initialize() {
 		s.bs[i].moveBack()
 		s.g.wallHax(&s.bs[i].p)
 	}
+}
+
+func (s *snake) clear() {
+	s.printOverAll(" ")
+	s.dead = false
+	s.queued = 0
 }

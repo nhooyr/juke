@@ -15,6 +15,8 @@ Type
 
 for help instructions
 
+**ITS MUCH MUCH MORE FUN WITH FRIENDS, ESPECIALLY IF YOU PLAY WITH ALL THE SETTINGS!**
+
 ###TODO
 net multiplayer
 
@@ -23,5 +25,3 @@ more powerups
 documentation
 
 proper interface
-
-perfect generation of blocks in back (if they go into other snakes)

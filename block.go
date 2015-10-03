@@ -43,3 +43,16 @@ func (b *block) moveForward() {
 		b.p.x -= 1
 	}
 }
+
+func oppositeDir(d1, d2 uint16) bool {
+	if d1%2 == 1 {
+		if d1+1 == d2 {
+			return true
+		}
+	} else {
+		if d1-1 == d2 {
+			return true
+		}
+	}
+	return false
+}

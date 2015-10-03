@@ -34,7 +34,6 @@ type game struct {
 }
 
 func (g *game) captureSignals() {
-	// capture signals
 	g.sigs = make(chan os.Signal)
 	signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -43,15 +42,6 @@ func (g *game) captureSignals() {
 		g.cleanup()
 		os.Exit(0)
 	}()
-}
-
-func (g *game) cleanup() {
-	// restore text to normal
-	os.Stdout.WriteString(NORMAL)
-	// make cursor visible
-	os.Stdin.WriteString(CURSORVIS)
-	// set tty to normal
-	g.writeTermios(g.oldTios)
 }
 
 func (g *game) parseFlags() {
@@ -73,13 +63,10 @@ Controls:
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")
 	tmpw := flag.Uint("w", 0, "width of playground (default width of tty)")
 	tmpi := flag.Uint("i", 3, "initital size of snake")
-	tmpp := flag.Uint("p", 1, "number of players")
-	tmps := flag.Int64("s", 20, "unit's per second for snake")
-	tmpf := flag.Int64("f", 1, "how many blocks each food adds")
+	tmpp := flag.Uint("p", 2, "number of players")
+	tmps := flag.Uint("s", 30, "unit's per second for snake")
+	tmpf := flag.Uint("f", 5, "how many blocks each food adds")
 	flag.Parse()
-	if g.players > 4 {
-		log.Fatal("cannot be more than 4 players")
-	}
 	g.h = uint16(*tmph)
 	g.w = uint16(*tmpw)
 	g.init = uint16(*tmpi)
@@ -87,20 +74,35 @@ Controls:
 		log.Fatal("initial size of snake cannot be 0")
 	}
 	g.players = uint16(*tmpp)
+	if g.players > 4 {
+		log.Fatal("cannot have more than 4 players")
+	}
 	g.foodVal = uint16(*tmpf)
+	if g.foodVal == 0 {
+		log.Fatal("food value cannot be 0")
+	}
 	g.speed = time.Duration(*tmps)
+	if g.speed == 0 {
+		log.Fatal("speed cannot be 0 units per second")
+	}
 
 }
 
-func (g *game) nextGame() {
+func (g *game) next() {
 	for i := uint16(0); i < g.players; i++ {
-		g.clearSnake(i)
+		g.s[i].clear()
 		g.f.clearFood(i)
 		g.s[i].initialize()
 	}
 	for i := uint16(0); i < g.players; i++ {
-		g.f.addFood(i)
-		g.f.printFood(i)
+		g.f.fillVP(i + 1)
+		if len(g.f.vp) != 0 {
+			g.f.addFood(i)
+			g.f.printFood(i)
+		} else {
+			g.f.p[i] = position{}
+			break
+		}
 	}
 	g.printSnakes()
 }
@@ -109,23 +111,22 @@ func (g *game) loop() {
 	for t := time.NewTimer(time.Second / g.speed); ; t.Reset(time.Second / g.speed) {
 		select {
 		case <-g.restart:
-			g.nextGame()
+			g.next()
 			continue
 		case <-g.pause:
 			select {
 			case <-g.pause:
-				continue
 			case <-g.restart:
-				g.nextGame()
-				continue
+				g.next()
 			}
+			continue
 		case <-t.C:
 			// next frame time
 		}
-		g.checkFood()
 		g.moveSnakes()
 		g.checkCollisions()
 		g.updateSnakes()
+		g.checkFood()
 		g.moveTo(position{g.h - 1, g.w - 1})
 	}
 }
@@ -143,7 +144,12 @@ func (g *game) initialize() {
 		g.s[i].initialize()
 	}
 	for i := uint16(0); i < g.players; i++ {
-		g.f.addFood(i)
+		g.f.fillVP(0)
+		if len(g.f.vp) != 0 {
+			g.f.addFood(i)
+		} else {
+			break
+		}
 	}
 }
 
@@ -156,54 +162,6 @@ func (g *game) start() {
 	g.loop()
 }
 
-func (g *game) setOrigin() {
-	// get cursor position
-	os.Stdin.WriteString(CURSORPOS)
-	r := bufio.NewReader(os.Stdin)
-	p, err := r.ReadString('R')
-	if err != nil {
-		log.Fatal(err)
-	}
-	i := strings.Index(p, ";")
-	row, err := strconv.ParseUint(p[2:i], 10, 16)
-	if err != nil {
-		log.Fatal(err)
-	}
-	col, err := strconv.ParseUint(p[i+1:len(p)-1], 10, 16)
-	if err != nil {
-		log.Fatal(err)
-	}
-	g.origin = position{y: uint16(row), x: uint16(col)}
-}
-
-func (g *game) setDimensions() {
-	// get dimensions and check if offset needed
-	dimensions := g.getDimensions()
-	if g.h == 0 {
-		g.h = dimensions[0]
-	}
-	if g.w == 0 {
-		g.w = dimensions[1]
-	}
-	g.hf = float64(g.h - 1)
-	g.wf = float64(g.w - 1)
-	if g.w < 4 || g.h < 4 {
-		g.cleanup()
-		log.Fatal("width or height cannot be less than 4")
-	} else if g.init > uint16(g.wf/3) {
-		g.cleanup()
-		log.Fatalln("init too big, max init size for this width is", uint16(g.wf/3))
-	} else if i := uint16(g.origin.y) + g.h; i > dimensions[0] {
-		g.rowOffSet = i - dimensions[0] - 1
-	}
-}
-
-func (g *game) clearSnake(i uint16) {
-	g.s[i].printOverAll(" ")
-	g.s[i].dead = false
-}
-
-// print current ground
 func (g *game) printGround() {
 	for y := uint16(0); y < g.h; y++ {
 		for x := uint16(0); x < g.w; x++ {
@@ -222,10 +180,6 @@ func (g *game) printGround() {
 			os.Stdout.WriteString("\n")
 		}
 	}
-}
-
-func (g *game) moveTo(p position) {
-	os.Stdin.WriteString(fmt.Sprintf(CURSORADDR, p.y+g.origin.y-g.rowOffSet, p.x+g.origin.x))
 }
 
 // process the input
@@ -266,35 +220,35 @@ func (g *game) processInput() {
 			}
 		} else {
 			switch b[0] {
-			case 'w':
+			case 'w', 'W':
 				changeDir(1, up)
-			case 'd':
+			case 'd', 'D':
 				changeDir(1, right)
-			case 's':
+			case 's', 'S':
 				changeDir(1, down)
-			case 'a':
+			case 'a', 'A':
 				changeDir(1, left)
-			case 'y':
+			case 'y', 'Y':
 				changeDir(2, up)
-			case 'j':
+			case 'j', 'J':
 				changeDir(2, right)
-			case 'h':
+			case 'h', 'H':
 				changeDir(2, down)
-			case 'g':
+			case 'g', 'G':
 				changeDir(2, left)
-			case 'p':
+			case 'p', 'P':
 				changeDir(3, up)
-			case '\'':
+			case '\'', '|':
 				changeDir(3, right)
-			case ';':
+			case ';', ':':
 				changeDir(3, down)
-			case 'l':
+			case 'l', 'L':
 				changeDir(3, left)
-			case 't':
+			case 't', 'T':
 				g.pause <- struct{}{}
-			case 'r':
+			case 'r', 'R':
 				g.restart <- struct{}{}
-			case 'q':
+			case 'q', 'Q':
 				g.sigs <- syscall.SIGTERM
 			}
 		}
@@ -303,17 +257,13 @@ func (g *game) processInput() {
 
 func (g *game) updateSnakes() {
 	for i := uint16(0); i < g.players; i++ {
-		if g.s[i].dead == false {
-			g.s[i].update()
-		}
+		g.s[i].update()
 	}
 }
 
 func (g *game) printSnakes() {
 	for i := uint16(0); i < g.players; i++ {
-		if g.s[i].dead == false {
-			g.s[i].printOverAll("=")
-		}
+		g.s[i].printOverAll("=")
 	}
 }
 
@@ -325,32 +275,7 @@ func (g *game) printAllFood() {
 
 func (g *game) moveSnakes() {
 	for i := uint16(0); i < g.players; i++ {
-		if g.s[i].dead == false {
-			g.s[i].move()
-		}
-	}
-}
-
-//TODO REDO THIS
-func (g *game) checkFood() {
-	for i := uint16(0); i < g.players; i++ {
-		for j := uint16(0); j < g.players; j++ {
-			if g.s[i].bs[0].p == g.f.p[j] {
-				bs := g.s[i].appendBlocks(g.foodVal)
-				g.s[i].printColor()
-				for k := uint16(0); k < g.foodVal; k++ {
-					if !g.isUsed(bs[k].p) {
-						g.moveTo(bs[k].p)
-						os.Stdout.WriteString("=")
-					}
-				}
-				g.s[i].Lock()
-				g.s[i].bs = append(g.s[i].bs, bs...)
-				g.s[i].Unlock()
-				g.f.addFood(j)
-				g.f.printFood(j)
-			}
-		}
+		g.s[i].move()
 	}
 }
 
@@ -378,7 +303,11 @@ func (g *game) checkCollisions() {
 		setRand(&min, &end, &inc)
 		for j := min; j != end; j += inc {
 			if j != i {
-				// first check if any of j is on the first block of i, then if len of i's bs is just one, make sure their first elements are opposite dir and then check if i is on any of j's oldBs or if i is on any of j's new Bs (this is needed for when one is len of just 1 and the other is greater, eg 2)
+				/* first check if any of j is on the first block of i,
+				then if len of i's bs is just one, make sure their first
+				elements are opposite dir and then check if i is on any
+				of j's oldBs or if i is on any of j's new Bs (this is
+				needed for when one is len of just 1 and the other is greater, eg 2)*/
 				if g.s[j].on(g.s[i].bs[0].p, 0, len(g.s[j].bs), 1) ||
 					// this for if length is 1
 					(len(g.s[i].bs) == 1 && oppositeDir(g.s[i].bs[0].d, g.s[j].bs[0].d) &&
@@ -393,19 +322,6 @@ func (g *game) checkCollisions() {
 	}
 }
 
-func oppositeDir(d1, d2 uint16) bool {
-	if d1%2 == 1 {
-		if d1+1 == d2 {
-			return true
-		}
-	} else {
-		if d1-1 == d2 {
-			return true
-		}
-	}
-	return false
-}
-
 func (g *game) isUsed(p position) bool {
 	for i := uint16(0); i < g.players; i++ {
 		if g.s[i].on(p, 0, len(g.s[i].bs), 1) || g.f.p[i] == p {
@@ -413,4 +329,89 @@ func (g *game) isUsed(p position) bool {
 		}
 	}
 	return false
+}
+
+func (g *game) checkFood() {
+	for i := uint16(0); i < g.players; i++ {
+		for j := uint16(0); j < g.players; j++ {
+			if g.s[i].bs[0].p == g.f.p[j] {
+				g.s[i].queued += g.foodVal
+				g.f.fillVP(j + 1)
+				if len(g.f.vp) != 0 {
+					g.f.addFood(j)
+					g.f.printFood(j)
+				} else {
+					g.f.p[j] = position{}
+				}
+			}
+		}
+	}
+	for i := uint16(0); i < g.players; i++ {
+		if g.f.p[i] == (position{}) {
+			g.f.fillVP(0)
+			if len(g.f.vp) != 0 {
+				g.f.addFood(i)
+				g.f.printFood(i)
+			}
+		}
+	}
+}
+
+// get dimensions and check if rowOffSet needed
+func (g *game) setDimensions() {
+	dimensions := getDimensions()
+	if g.h == 0 {
+		g.h = dimensions[0]
+	}
+	if g.w == 0 {
+		g.w = dimensions[1]
+	}
+	if g.w < 4 || g.h < 4 {
+		panic("width or height cannot be less than 4")
+	}
+	g.wf = float64(g.w - 1)
+	if g.init > uint16(g.wf/3) {
+		panic(fmt.Sprintf("max init size of snake for this width is %d", uint16(g.wf/3)))
+	}
+	g.hf = float64(g.h - 1)
+	if i := uint16(g.origin.y) + g.h; i > dimensions[0] {
+		g.rowOffSet = i - dimensions[0] - 1
+	}
+}
+
+func (g *game) setTTY() {
+	os.Stdin.WriteString(CURSORINVIS)
+	raw := g.oldTios
+	raw.Lflag &^= syscall.ECHO | syscall.ICANON
+	writeTermios(raw)
+}
+
+func (g *game) cleanup() {
+	// make text normal and cursor visible
+	os.Stdin.WriteString(NORMAL + CURSORVIS)
+	// set tty to normal
+	writeTermios(g.oldTios)
+}
+
+func (g *game) setOrigin() {
+	os.Stdin.WriteString(CURSORPOS)
+	r := bufio.NewReader(os.Stdin)
+	p, err := r.ReadString('R')
+	if err != nil {
+		panic(err)
+	}
+	i := strings.Index(p, ";")
+	row, err := strconv.ParseUint(p[2:i], 10, 16)
+	if err != nil {
+		panic(err)
+	}
+	col, err := strconv.ParseUint(p[i+1:len(p)-1], 10, 16)
+	if err != nil {
+		panic(err)
+	}
+	g.origin = position{uint16(row), uint16(col)}
+}
+
+func (g *game) moveTo(p position) {
+	os.Stdin.WriteString(fmt.Sprintf(CURSORADDR, p.y+g.origin.y-g.rowOffSet, p.x+g.origin.x))
 }

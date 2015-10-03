@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-// terminal escape sequences defined
+// xterm terminal escape sequences defined
 const (
 	CSI         = "\033["
 	NORMAL      = CSI + "0m"
@@ -21,24 +21,22 @@ const (
 	MAGENTA     = CSI + "35m"
 )
 
-func (g *game) readTermios() (t syscall.Termios) {
+func readTermios() (t syscall.Termios) {
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlReadTermios, uintptr(unsafe.Pointer(&t)), 0, 0, 0); err != 0 {
-		log.Fatalln("not a terminal, got:", err)
+		log.Fatal(err)
 	}
 	return
 }
 
-func (g *game) writeTermios(t syscall.Termios) {
+func writeTermios(t syscall.Termios) {
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, os.Stdin.Fd(), ioctlWriteTermios, uintptr(unsafe.Pointer(&t)), 0, 0, 0); err != 0 {
-		g.cleanup()
-		log.Fatal(err)
+		panic(err)
 	}
 }
 
-func (g *game) getDimensions()(dimensions [4]uint16) {
+func getDimensions() (dimensions [4]uint16) {
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(os.Stdin.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dimensions)), 0, 0, 0); err != 0 {
-		g.cleanup()
-		log.Fatal(err)
+		panic(err)
 	}
 	return
 }

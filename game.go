@@ -58,6 +58,37 @@ Controls:
   t to pause (and unpause)
   r to restart
   q to quit
+
+Rules:
+    1. You can go through the walls.
+    2. You can go through yourself.
+    3. If you touch anyone else with your head you die. E.g
+
+       `+BLUE+`=
+     `+ RED+`==`+BLUE+`=
+       =
+
+       =
+     `+RED+`xx`+BLUE+`=
+       =
+
+    `+NORMAL+`4. If both heads hit each other, both snakes die. E.g
+
+    `+RED+`==`+BLUE+`==
+
+    `+RED+`xx`+BLUE+`xx
+
+    `+NORMAL+`5. If they both don't hit each other but are going to land on the same square. E.g
+
+    `+RED+`=`+NORMAL+`_`+BLUE+`=
+
+    `+NORMAL+`(_ is square they are both going to land on)
+
+    Then randomly one is chosen to get the square and the other dies.
+
+    `+RED+`x`+BLUE+`=
+
+    `+NORMAL+`6. Food increases the length of the snake but not instantly, it begins to grow by the value of the food.
 `)
 	}
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")

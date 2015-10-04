@@ -21,6 +21,8 @@ And the rules with
 
      juke -rules
 
+But you should be able to figure out most of it just by playing the game for like 2 minutes.
+
 **ITS MUCH MUCH MORE FUN WITH FRIENDS, ESPECIALLY IF YOU PLAY AROUND WITH ALL THE SETTINGS!**
 
 <img src="https://raw.githubusercontent.com/nhooyr/juke/master/screenshot.png" border="0">

@@ -44,7 +44,7 @@ func (g *game) captureSignals() {
 	}()
 }
 
-func (g *game) printRules() {
+func printRules() {
 	ind := "     "
 	indB := ind + BLUE
 	indM := ind + MAGENTA
@@ -106,7 +106,7 @@ Controls:
 
 	flag.Parse()
 	if *tmpr {
-		g.printRules()
+		printRules()
 		os.Exit(0)
 	}
 	g.h = uint16(*tmph)

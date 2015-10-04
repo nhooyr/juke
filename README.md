@@ -13,9 +13,13 @@ As long as $GOPATH/bin is in your path just run it with
 
 	juke
 
-Check out the rules/settings/controls with
+Check out the settings/controls with
 
 	juke -help
+
+And the rules with
+
+     juke -rules
 
 **ITS MUCH MUCH MORE FUN WITH FRIENDS, ESPECIALLY IF YOU PLAY AROUND WITH ALL THE SETTINGS!**
 

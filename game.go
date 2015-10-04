@@ -44,6 +44,42 @@ func (g *game) captureSignals() {
 	}()
 }
 
+func (g *game) printRules() {
+	ind := "     "
+	indB := ind + BLUE
+	indM := ind + MAGENTA
+	t := "Rules of juke"
+	r1 := ind + "1. Snakes can go through the walls, they will appear on the other side."
+	r2 := ind + "2. Snakes can go through themselves without death."
+	r3 := ind + "3. If a snake's head's next movement means going through another snake it dies."
+	d1 := fmt.Sprintf("\n%s===      ===      ===", indB)
+	d1 += fmt.Sprintf("\n%s           =       x", indM)
+	d1 += fmt.Sprintf("\n%s   =       =       x", indM)
+	d1 += fmt.Sprintf("\n%s   =       =       x", indM)
+	d1 += fmt.Sprintf("\n%s   =%s\n", indM, NORMAL)
+	r4 := ind + "4. If two snake heads are going to collide into each other, they both die."
+	d2 := fmt.Sprintf("\n%s =", indB)
+	d2 += fmt.Sprintf("\n%s =        =        x", indB)
+	d2 += fmt.Sprintf("\n%s =        =        x", indB)
+	d2 += fmt.Sprintf("\n%s          =        x", indB)
+	d2 += fmt.Sprintf("\n%s          =        x", indM)
+	d2 += fmt.Sprintf("\n%s =        =        x", indM)
+	d2 += fmt.Sprintf("\n%s =        =        x", indM)
+	d2 += fmt.Sprintf("\n%s =%s\n", indM, NORMAL)
+	r5 := ind + "5. If two snake heads are going to land onto the exact same square,\n" + ind + "one is randomly chosen to die and the other takes the square."
+	d3 := fmt.Sprintf("\n%s =", indB)
+	d3 += fmt.Sprintf("\n%s =        =", indB)
+	d3 += fmt.Sprintf("\n%s =        =        =", indB)
+	d3 += fmt.Sprintf("\n%s          =        =", indB)
+	d3 += fmt.Sprintf("\n%s                   =", indB)
+	d3 += fmt.Sprintf("\n%s          =        x", indM)
+	d3 += fmt.Sprintf("\n%s =        =        x", indM)
+	d3 += fmt.Sprintf("\n%s =        =        x", indM)
+	d3 += fmt.Sprintf("\n%s =%s\n", indM, NORMAL)
+	r6 := ind + "6. Food (the A) increases the length of the snake but not instantly,\n" + ind + "the way it grows is best understood by actually playing the game and eating some food."
+	fmt.Printf("%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n", t, r1, r2, r3, d1, r4, d2, r5, d3, r6)
+}
+
 func (g *game) parseFlags() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -58,53 +94,21 @@ Controls:
   t to pause (and unpause)
   r to restart
   q to quit
-
-Rules:
-    1. You can go through the walls, you will appear on the other side.
-    2. You can go through yourself.
-    3. If you touch anyone else with your head you die. E.g
-
-       ` + BLUE + `=
-     ` + RED + `==` + BLUE + `=
-       =
-
-    ` + NORMAL + `Then
-
-       ` + BLUE + `=
-     ` + RED + `xx` + BLUE + `=
-       =
-
-    ` + NORMAL + `4. If both heads hit each other, both snakes die. E.g
-
-    ` + RED + `==` + BLUE + `==
-
-    ` + NORMAL + `Then
-
-    ` + RED + `xx` + BLUE + `xx
-
-    ` + NORMAL + `5. If they both don't hit each other but are going to land
-    on the same square. E.g
-
-    ` + RED + `=` + NORMAL + `_` + BLUE + `=
-
-    ` + NORMAL + `(_ is square they are both going to land on)
-
-    Then randomly one is chosen to get the square and the other dies.
-
-    ` + RED + `x` + BLUE + `=
-
-    ` + NORMAL + `6. Food (the A) increases the length of the snake but not instantly,
-    it begins to grow by the value of the food, this is best understood by
-    actually playing the game.
 `)
 	}
+	tmpr := flag.Bool("rules", false, "print out rules and exit")
 	tmph := flag.Uint("h", 0, "height of playground (default height of tty)")
 	tmpw := flag.Uint("w", 0, "width of playground (default width of tty)")
 	tmpi := flag.Uint("i", 3, "initital size of snake")
 	tmpp := flag.Uint("p", 2, "number of players")
 	tmps := flag.Uint("s", 30, "unit's per second for snake")
 	tmpf := flag.Uint("f", 5, "how many blocks each food adds")
+
 	flag.Parse()
+	if *tmpr {
+		g.printRules()
+		os.Exit(0)
+	}
 	g.h = uint16(*tmph)
 	g.w = uint16(*tmpw)
 	g.init = uint16(*tmpi)

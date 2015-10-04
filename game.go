@@ -250,7 +250,7 @@ func (g *game) processInput() {
 	}
 	for {
 		read()
-		if b[0] == 27 && g.s[0].dead == false {
+		if b[0] == 27 {
 			read()
 			if b[0] == 91 {
 				read()

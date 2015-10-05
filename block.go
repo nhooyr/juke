@@ -1,7 +1,7 @@
 package main
 
 const (
-	up = iota + 1
+	up = iota
 	down
 	right
 	left

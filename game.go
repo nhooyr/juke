@@ -227,7 +227,6 @@ func (g *game) printGround() {
 // process the input
 func (g *game) processInput() {
 	b := make([]byte, 1)
-	var prevDir = make([]uint16, g.players)
 	read := func() {
 		_, err := os.Stdin.Read(b)
 		if err != nil {
@@ -236,63 +235,60 @@ func (g *game) processInput() {
 		}
 	}
 	changeDir := func(s uint16, dir uint16) {
-		if g.players <= s || g.s[s].dead == true || prevDir[s] == dir {
+		if g.players <= s || g.s[s].dead == true {
 			return
 		}
 		g.s[s].Lock()
 		g.s[s].bs[0].d = dir
 		g.s[s].Unlock()
-		prevDir[s] = dir
 	}
 	for {
 		read()
-		if b[0] == 27 {
+		switch b[0] {
+		case 27:
 			read()
 			if b[0] == 91 {
 				read()
-				dir := uint16(b[0] - 64)
+				dir := uint16(b[0] - 65)
 				switch dir {
 				case up, down, right, left:
 					changeDir(0, dir)
 				}
 			}
-		} else {
-			switch b[0] {
-			case 'w', 'W':
-				changeDir(1, up)
-			case 'd', 'D':
-				changeDir(1, right)
-			case 's', 'S':
-				changeDir(1, down)
-			case 'a', 'A':
-				changeDir(1, left)
-			case 'y', 'Y':
-				changeDir(2, up)
-			case 'j', 'J':
-				changeDir(2, right)
-			case 'h', 'H':
-				changeDir(2, down)
-			case 'g', 'G':
-				changeDir(2, left)
-			case 'p', 'P':
-				changeDir(3, up)
-			case '\'', '|':
-				changeDir(3, right)
-			case ';', ':':
-				changeDir(3, down)
-			case 'l', 'L':
-				changeDir(3, left)
-			case 't', 'T':
-				g.pause <- struct{}{}
-			case 'r', 'R':
-				select {
-				case g.restart <- struct{}{}:
-				default:
-					// already restarting
-				}
-			case 'q', 'Q':
-				g.sigs <- syscall.SIGTERM
+		case 'w', 'W':
+			changeDir(1, up)
+		case 's', 'S':
+			changeDir(1, down)
+		case 'a', 'A':
+			changeDir(1, left)
+		case 'd', 'D':
+			changeDir(1, right)
+		case 'y', 'Y':
+			changeDir(2, up)
+		case 'h', 'H':
+			changeDir(2, down)
+		case 'g', 'G':
+			changeDir(2, left)
+		case 'j', 'J':
+			changeDir(2, right)
+		case 'p', 'P':
+			changeDir(3, up)
+		case ';', ':':
+			changeDir(3, down)
+		case 'l', 'L':
+			changeDir(3, left)
+		case '\'', '|':
+			changeDir(3, right)
+		case 't', 'T':
+			g.pause <- struct{}{}
+		case 'r', 'R':
+			select {
+			case g.restart <- struct{}{}:
+			default:
+				// already restarting
 			}
+		case 'q', 'Q':
+			g.sigs <- syscall.SIGTERM
 		}
 	}
 }

@@ -231,15 +231,10 @@ func (g *game) processInput() {
 	read := func() {
 		_, err := os.Stdin.Read(b)
 		if err != nil {
-			panic(err)
-		}
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println(r)
+			log.Print(err)
 			g.sigs <- syscall.SIGTERM
 		}
-	}()
+	}
 	changeDir := func(s uint16, dir uint16) {
 		if g.players <= s || g.s[s].dead == true || prevDir[s] == dir {
 			return
@@ -247,6 +242,7 @@ func (g *game) processInput() {
 		g.s[s].Lock()
 		g.s[s].bs[0].d = dir
 		g.s[s].Unlock()
+		prevDir[s] = dir
 	}
 	for {
 		read()

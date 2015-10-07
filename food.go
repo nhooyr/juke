@@ -10,40 +10,29 @@ type food struct {
 	p  []position
 	vp []position // valid positions
 	i  uint16     // operating food
-	x  uint16
-	y  uint16
 	s  uint16
 	g  *game
 }
 
-func (f *food) loopY() {
-	for f.y = uint16(1); f.y < f.g.h-1; f.y++ {
-		f.loopX()
-	}
-}
-
-func (f *food) loopX() {
-	for f.x = uint16(1); f.x < f.g.w-1; f.x++ {
-		if f.loopS() {
-			continue
+// loop y/x then send those values to loopS
+func (f *food) loopYX(cb func(x, y uint16) bool) {
+	for y := uint16(1); y < f.g.h-1; y++ {
+		for x := uint16(1); x < f.g.w-1; x++ {
+			if cb(y, x) {
+				continue
+			}
+			f.vp = append(f.vp, position{y, x})
 		}
-		f.vp = append(f.vp, position{f.y, f.x})
 	}
 }
 
-func (f *food) loopS() bool {
+// loop snake then food with x/y
+func (f *food) loopSF(y, x uint16) bool {
 	for f.s = uint16(0); f.s < f.g.players; f.s++ {
-		if f.loopF() {
-			return true
-		}
-	}
-	return false
-}
-
-func (f *food) loopF() bool {
-	for j := uint16(0); j < f.g.players; j++ {
-		if ((f.i == 0 || f.i-1 != j) && f.p[j] == (position{f.y, f.x})) || f.g.s[f.s].on(position{f.y, f.x}, 0, len(f.g.s[f.s].bs), 1) {
-			return true
+		for j := uint16(0); j < f.g.players; j++ {
+			if ((f.i == 0 || f.i-1 != j) && f.p[j] == (position{y, x})) || f.g.s[f.s].on(position{y, x}, 0, len(f.g.s[f.s].bs), 1) {
+				return true
+			}
 		}
 	}
 	return false
@@ -52,7 +41,7 @@ func (f *food) loopF() bool {
 func (f *food) fillVP(i uint16) {
 	f.i = i
 	f.vp = make([]position, 0)
-	f.loopY()
+	f.loopYX(f.loopSF)
 }
 
 func (f *food) addFood(i uint16) {

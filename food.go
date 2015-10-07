@@ -10,7 +10,6 @@ type food struct {
 	p  []position
 	vp []position // valid positions
 	i  uint16     // operating food
-	s  uint16
 	g  *game
 }
 
@@ -28,9 +27,10 @@ func (f *food) loopYX(cb func(x, y uint16) bool) {
 
 // loop snake then food with x/y
 func (f *food) loopSF(y, x uint16) bool {
-	for f.s = uint16(0); f.s < f.g.players; f.s++ {
+	for s := uint16(0); s < f.g.players; s++ {
 		for j := uint16(0); j < f.g.players; j++ {
-			if ((f.i == 0 || f.i-1 != j) && f.p[j] == (position{y, x})) || f.g.s[f.s].on(position{y, x}, 0, len(f.g.s[f.s].bs), 1) {
+			if ((f.i == 0 || f.i-1 != j) && f.p[j] == (position{y, x})) ||
+				f.g.s[s].on(position{y, x}, 0, len(f.g.s[s].bs), 1) {
 				return true
 			}
 		}

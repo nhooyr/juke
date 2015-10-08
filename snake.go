@@ -125,7 +125,7 @@ func (s *snake) initialize() {
 	switch s.player {
 	case 0, 3:
 		cow = 2
-		offset = s.g.wf / 6
+		offset = s.g.wf / 3 / 2
 	case 1, 2:
 		cow = 1
 	}

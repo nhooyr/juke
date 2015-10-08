@@ -402,10 +402,12 @@ func (g *game) setDimensions() {
 	if g.w == 0 {
 		g.w = d[1]
 	}
-	if g.w < 4 || g.h < 4 {
-		panic("width or height cannot be less than 4")
+	if g.w < 5 {
+		panic("width cannot be less than 5")
+	} else if g.h < 4 {
+		panic("height cannot be less than 4")
 	}
-	g.wf = float64(g.w - 1)
+	g.wf = float64(g.w - 2)
 	if g.init > uint16(g.wf/3) {
 		panic(fmt.Sprintf("max init size of snake for this width is %d", uint16(g.wf/3)))
 	}

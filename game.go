@@ -48,7 +48,6 @@ func (g *game) captureSignals() {
 				g.pauseLoop <- struct{}{}
 			}
 			g.Unlock()
-			os.Stdout.WriteString("\n")
 			g.cleanup()
 			if s.String() != syscall.SIGTSTP.String() {
 				os.Exit(0)
@@ -59,6 +58,8 @@ func (g *game) captureSignals() {
 			g.pauseInput <- struct{}{}
 			g.printGround()
 			g.printAllSnakes()
+			g.printAllFood()
+			g.moveTo(position{g.h - 1, g.w - 1})
 		}
 	}()
 }
@@ -254,12 +255,14 @@ func (g *game) printGround() {
 func (g *game) processInput() {
 	b := make([]byte, 1)
 	read := func() {
-		select {
-		case <-g.pauseInput:
-			<-g.pauseInput
-		default:
+		for {
+			if _, err := os.Stdin.Read(b); err != nil {
+				<-g.pauseInput
+				<-g.pauseInput
+				continue
+			}
+			break
 		}
-		os.Stdin.Read(b)
 	}
 	changeDir := func(s uint16, dir uint16) {
 		if g.players <= s || g.s[s].dead == true {
@@ -467,6 +470,7 @@ func (g *game) cleanup() {
 	os.Stdin.WriteString(NORMAL + CURSORVIS)
 	// set tty to normal
 	writeTermios(g.oldTios)
+	os.Stdout.WriteString("\n")
 }
 
 func (g *game) setOrigin() {

@@ -22,7 +22,7 @@ type game struct {
 	wf         float64
 	rowOffSet  uint16
 	sigs       chan os.Signal
-	s          []snake
+	s          []*snake
 	foodVal    uint16
 	f          *food
 	init       uint16
@@ -47,9 +47,9 @@ func (g *game) captureSignals() {
 			if !g.pausedLoop {
 				g.pauseLoop <- struct{}{}
 			}
-			g.Unlock()
 			g.cleanup()
 			if s.String() != syscall.SIGTSTP.String() {
+				os.Stdout.WriteString("\n")
 				os.Exit(0)
 			}
 			g.pauseInput <- struct{}{}
@@ -62,6 +62,7 @@ func (g *game) captureSignals() {
 			g.printAllSnakes()
 			g.printAllFood()
 			g.moveTo(position{g.h - 1, g.w - 1})
+			g.Unlock()
 		}
 	}()
 }
@@ -169,9 +170,11 @@ func (g *game) next() {
 		}
 	}
 	g.printAllSnakes()
+	g.moveTo(position{g.h - 1, g.w - 1})
 }
 
 func (g *game) loop() {
+	g.moveTo(position{g.h - 1, g.w - 1})
 	for t := time.NewTimer(time.Second / g.speed); ; t.Reset(time.Second / g.speed) {
 		select {
 		case <-g.restart:
@@ -193,6 +196,7 @@ func (g *game) loop() {
 		case <-t.C:
 			// next frame time
 		}
+		g.moveTo(position{1, 1})
 		g.moveSnakes()
 		g.checkCollisions()
 		g.updateSnakes()
@@ -205,11 +209,12 @@ func (g *game) initialize() {
 	g.restart = make(chan struct{}, 1)
 	g.pauseInput = make(chan struct{}, 1)
 	g.pauseLoop = make(chan struct{})
-	g.s = make([]snake, g.players)
+	g.s = make([]*snake, g.players)
 	g.f = new(food)
 	g.f.p = make([]position, g.players)
 	g.f.g = g
 	for i := uint16(0); i < g.players; i++ {
+		g.s[i] = new(snake)
 		g.s[i].g = g
 		g.s[i].player = i
 		g.s[i].initialize()
@@ -255,39 +260,39 @@ func (g *game) printGround() {
 
 // process the input
 func (g *game) processInput() {
-	b := make([]byte, 1)
+	var b byte
+	r := bufio.NewReader(os.Stdin)
 	read := func() {
 		for {
 			select {
 			case <-g.pauseInput:
 				<-g.pauseInput
 			default:
-				if _, err := os.Stdin.Read(b); err == nil {
+				var err error
+				if b, err = r.ReadByte(); err == nil {
 					return
 				}
 			}
 		}
 	}
-	changeDir := func(s uint16, dir uint16) {
-		if g.players <= s || g.s[s].dead == true {
+	changeDir := func(i uint16, d uint16) {
+		if g.players <= i || g.s[i].getDead() == true || g.s[i].getDir() == d {
 			return
 		}
-		g.s[s].Lock()
-		g.s[s].bs[0].d = dir
-		g.s[s].Unlock()
+		g.s[i].setDir(d)
 	}
 	for {
 		read()
-		switch b[0] {
+		switch b {
 		case 27:
 			for {
 				read()
-				switch b[0] {
+				switch b {
 				// handle shift arrow keys
 				case 91, 49, 59, 50:
 					continue
 				default:
-					switch dir := uint16(b[0] - 65); dir {
+					switch dir := uint16(b - 65); dir {
 					case up, down, right, left:
 						changeDir(0, dir)
 					}
@@ -319,7 +324,14 @@ func (g *game) processInput() {
 		case '\'', '|':
 			changeDir(3, right)
 		case 't', 'T':
-			g.pauseLoop <- struct{}{}
+			// selected needed here if this is waiting on pauseLoop,
+			// but pauseLoop is stuck in g.Lock() because its locked by captureSignals
+			// and that is blocked on sending to pauseInput
+			select {
+			case g.pauseLoop <- struct{}{}:
+			case <-g.pauseInput:
+				<-g.pauseInput
+			}
 		case 'r', 'R':
 			select {
 			case g.restart <- struct{}{}:
@@ -340,7 +352,7 @@ func (g *game) updateSnakes() {
 
 func (g *game) printAllSnakes() {
 	for i := uint16(0); i < g.players; i++ {
-		if g.s[i].dead != true {
+		if g.s[i].getDead() != true {
 			g.s[i].printOverAll("=")
 		} else {
 			g.s[i].printOverAll("x")
@@ -479,6 +491,7 @@ func (g *game) cleanup() {
 func (g *game) setOrigin() {
 	os.Stdin.WriteString(CURSORPOS)
 	r := bufio.NewReader(os.Stdin)
+	//TODO FIX THIS with regex
 	p, err := r.ReadString('R')
 	if err != nil {
 		panic(err)
@@ -486,8 +499,6 @@ func (g *game) setOrigin() {
 	i := strings.Index(p, ";")
 	row, err := strconv.ParseUint(p[2:i], 10, 16)
 	if err != nil {
-		log.Println([]byte(p))
-		log.Println(p[2:])
 		panic(err)
 	}
 	col, err := strconv.ParseUint(p[i+1:len(p)-1], 10, 16)

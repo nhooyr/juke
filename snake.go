@@ -12,7 +12,8 @@ type snake struct {
 	dead   bool
 	queued uint16
 	player uint16
-	sync.Mutex
+	bsm    sync.RWMutex
+	deadm  sync.RWMutex
 }
 
 func (s *snake) printColor() {
@@ -42,7 +43,7 @@ func (s *snake) printOverAll(p string) {
 }
 
 func (s *snake) update() {
-	if s.dead == true {
+	if s.getDead() {
 		return
 	}
 	if !s.g.isUsed(s.oldBs[len(s.oldBs)-1].p) {
@@ -58,10 +59,8 @@ func (s *snake) update() {
 }
 
 func (s *snake) die() {
-	s.Lock()
 	s.bs = s.oldBs
-	s.Unlock()
-	s.dead = true
+	s.setDead(true)
 	s.printOverAll("x")
 }
 
@@ -75,6 +74,8 @@ func (s *snake) on(p position, min, end, inc int) bool {
 }
 
 func (s *snake) copyBsInOldBs() {
+	s.bsm.Lock()
+	defer s.bsm.Unlock()
 	if len(s.bs) != len(s.oldBs) {
 		min := len(s.oldBs)
 		for i := len(s.bs); i > min; i-- {
@@ -85,21 +86,27 @@ func (s *snake) copyBsInOldBs() {
 }
 
 func (s *snake) move() {
-	if s.dead == true {
+	if s.getDead() {
 		return
 	}
 	s.copyBsInOldBs()
 	for i := len(s.bs) - 1; i >= 0; i-- {
+		if i == 0 || i == 1 {
+			s.bsm.Lock()
+		}
 		s.bs[i].moveForward()
 		if i != 0 {
 			s.bs[i].d = s.bs[i-1].d
+			if i == 1 {
+				s.bsm.Unlock()
+			}
+		} else {
+			s.bsm.Unlock()
 		}
 		s.g.wallHax(&s.bs[i].p)
 	}
 	if s.queued != 0 {
-		s.Lock()
-		s.bs = append(s.bs, s.oldBs[len(s.oldBs)-1])
-		s.Unlock()
+		s.setBs(append(s.bs, s.oldBs[len(s.oldBs)-1]))
 		s.queued--
 	}
 }
@@ -118,7 +125,7 @@ func (g *game) wallHax(p *position) {
 }
 
 func (s *snake) initialize() {
-	s.bs = make([]block, s.g.init)
+	s.setBs(make([]block, s.g.init))
 	s.oldBs = make([]block, s.g.init)
 	s.bs[0].d = right
 	var cow, coh, offset float64
@@ -145,6 +152,36 @@ func (s *snake) initialize() {
 
 func (s *snake) clear() {
 	s.printOverAll(" ")
-	s.dead = false
+	s.setDead(false)
 	s.queued = 0
+}
+
+func (s *snake) getDead() bool {
+	s.deadm.RLock()
+	defer s.deadm.RUnlock()
+	return s.dead
+}
+
+func (s *snake) setDead(d bool) {
+	s.deadm.Lock()
+	defer s.deadm.Unlock()
+	s.dead = d
+}
+
+func (s *snake) setDir(d uint16) {
+	s.bsm.Lock()
+	defer s.bsm.Unlock()
+	s.bs[0].d = d
+}
+
+func (s *snake) getDir() uint16 {
+	s.bsm.RLock()
+	defer s.bsm.RUnlock()
+	return s.bs[0].d
+}
+
+func (s *snake) setBs(bs []block) {
+	s.bsm.Lock()
+	defer s.bsm.Unlock()
+	s.bs = bs
 }

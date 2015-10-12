@@ -43,15 +43,15 @@ func (g *game) captureSignals() {
 	go func() {
 		for {
 			s := <-g.sigs
-			g.cleanup()
-			if s.String() != syscall.SIGTSTP.String() {
-				os.Exit(0)
-			}
 			g.Lock()
 			if !g.pausedLoop {
 				g.pauseLoop <- struct{}{}
 			}
 			g.Unlock()
+			g.cleanup()
+			if s.String() != syscall.SIGTSTP.String() {
+				os.Exit(0)
+			}
 			g.pauseInput <- struct{}{}
 			signal.Reset(syscall.SIGTSTP)
 			syscall.Kill(os.Getpid(), syscall.SIGTSTP)

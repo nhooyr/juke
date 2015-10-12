@@ -10,37 +10,56 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
 
 type game struct {
-	h         uint16
-	w         uint16
-	hf        float64
-	wf        float64
-	rowOffSet uint16
-	sigs      chan os.Signal
-	s         []snake
-	foodVal   uint16
-	f         *food
-	init      uint16
-	players   uint16
-	origin    position
-	speed     time.Duration
-	restart   chan struct{}
-	pause     chan struct{}
-	oldTios   syscall.Termios
+	h          uint16
+	w          uint16
+	hf         float64
+	wf         float64
+	rowOffSet  uint16
+	sigs       chan os.Signal
+	s          []snake
+	foodVal    uint16
+	f          *food
+	init       uint16
+	players    uint16
+	origin     position
+	speed      time.Duration
+	restart    chan struct{}
+	pauseLoop  chan struct{}
+	pauseInput chan struct{}
+	pausedLoop bool
+	oldTios    syscall.Termios
+	sync.Mutex
 }
 
 func (g *game) captureSignals() {
 	g.sigs = make(chan os.Signal)
-	signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGTSTP)
 	go func() {
-		<-g.sigs
-		os.Stdout.WriteString("\n")
-		g.cleanup()
-		os.Exit(0)
+		for {
+			s := <-g.sigs
+			g.Lock()
+			if !g.pausedLoop {
+				g.pauseLoop <- struct{}{}
+			}
+			g.Unlock()
+			os.Stdout.WriteString("\n")
+			g.cleanup()
+			if s.String() != syscall.SIGTSTP.String() {
+				os.Exit(0)
+			}
+			g.pauseInput <- struct{}{}
+			syscall.Kill(syscall.Getpid(), syscall.SIGSTOP)
+			g.setTTY()
+			g.pauseInput <- struct{}{}
+			g.printGround()
+			g.printAllSnakes()
+		}
 	}()
 }
 
@@ -146,7 +165,7 @@ func (g *game) next() {
 			break
 		}
 	}
-	g.printSnakes()
+	g.printAllSnakes()
 }
 
 func (g *game) loop() {
@@ -155,12 +174,18 @@ func (g *game) loop() {
 		case <-g.restart:
 			g.next()
 			continue
-		case <-g.pause:
+		case <-g.pauseLoop:
+			g.Lock()
+			g.pausedLoop = true
+			g.Unlock()
 			select {
-			case <-g.pause:
+			case <-g.pauseLoop:
 			case <-g.restart:
 				g.next()
 			}
+			g.Lock()
+			g.pausedLoop = false
+			g.Unlock()
 			continue
 		case <-t.C:
 			// next frame time
@@ -175,7 +200,8 @@ func (g *game) loop() {
 
 func (g *game) initialize() {
 	g.restart = make(chan struct{}, 1)
-	g.pause = make(chan struct{})
+	g.pauseLoop = make(chan struct{})
+	g.pauseInput = make(chan struct{}, 1)
 	g.s = make([]snake, g.players)
 	g.f = new(food)
 	g.f.p = make([]position, g.players)
@@ -198,7 +224,7 @@ func (g *game) initialize() {
 func (g *game) start() {
 	g.initialize()
 	g.printGround()
-	g.printSnakes()
+	g.printAllSnakes()
 	g.printAllFood()
 	go g.processInput()
 	g.loop()
@@ -215,7 +241,7 @@ func (g *game) printGround() {
 			case x == 0 || x == g.w-1:
 				os.Stdout.WriteString("│")
 			default:
-				g.moveTo(position{y + g.rowOffSet, g.w - 1})
+				os.Stdout.WriteString(" ")
 			}
 		}
 		if y < g.h-1 {
@@ -228,11 +254,12 @@ func (g *game) printGround() {
 func (g *game) processInput() {
 	b := make([]byte, 1)
 	read := func() {
-		_, err := os.Stdin.Read(b)
-		if err != nil {
-			log.Print(err)
-			g.sigs <- syscall.SIGTERM
+		select {
+		case <-g.pauseInput:
+			<-g.pauseInput
+		default:
 		}
+		os.Stdin.Read(b)
 	}
 	changeDir := func(s uint16, dir uint16) {
 		if g.players <= s || g.s[s].dead == true {
@@ -246,14 +273,19 @@ func (g *game) processInput() {
 		read()
 		switch b[0] {
 		case 27:
-			read()
-			if b[0] == 91 {
+			for {
 				read()
-				dir := uint16(b[0] - 65)
-				switch dir {
-				case up, down, right, left:
-					changeDir(0, dir)
+				switch b[0] {
+				// handle shift arrow keys
+				case 91, 49, 59, 50:
+					continue
+				default:
+					switch dir := uint16(b[0] - 65); dir {
+					case up, down, right, left:
+						changeDir(0, dir)
+					}
 				}
+				break
 			}
 		case 'w', 'W':
 			changeDir(1, up)
@@ -280,7 +312,7 @@ func (g *game) processInput() {
 		case '\'', '|':
 			changeDir(3, right)
 		case 't', 'T':
-			g.pause <- struct{}{}
+			g.pauseLoop <- struct{}{}
 		case 'r', 'R':
 			select {
 			case g.restart <- struct{}{}:
@@ -299,9 +331,13 @@ func (g *game) updateSnakes() {
 	}
 }
 
-func (g *game) printSnakes() {
+func (g *game) printAllSnakes() {
 	for i := uint16(0); i < g.players; i++ {
-		g.s[i].printOverAll("=")
+		if g.s[i].dead != true {
+			g.s[i].printOverAll("=")
+		} else {
+			g.s[i].printOverAll("x")
+		}
 	}
 }
 
@@ -422,6 +458,8 @@ func (g *game) setTTY() {
 	raw := g.oldTios
 	raw.Lflag &^= syscall.ECHO | syscall.ICANON
 	writeTermios(raw)
+	g.setOrigin()
+	g.setDimensions()
 }
 
 func (g *game) cleanup() {
@@ -441,6 +479,8 @@ func (g *game) setOrigin() {
 	i := strings.Index(p, ";")
 	row, err := strconv.ParseUint(p[2:i], 10, 16)
 	if err != nil {
+		log.Println([]byte(p))
+		log.Println(p[2:])
 		panic(err)
 	}
 	col, err := strconv.ParseUint(p[i+1:len(p)-1], 10, 16)

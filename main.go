@@ -14,7 +14,5 @@ func main() {
 		g.cleanup()
 	}()
 	g.setTTY()
-	g.setOrigin()
-	g.setDimensions()
 	g.start()
 }

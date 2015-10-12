@@ -57,12 +57,12 @@ func (g *game) captureSignals() {
 			syscall.Kill(os.Getpid(), syscall.SIGTSTP)
 			signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGTSTP)
 			g.setTTY()
+			g.Unlock()
 			g.pauseInput <- struct{}{}
 			g.printGround()
 			g.printAllSnakes()
 			g.printAllFood()
 			g.moveTo(position{g.h - 1, g.w - 1})
-			g.Unlock()
 		}
 	}()
 }
@@ -174,7 +174,6 @@ func (g *game) next() {
 }
 
 func (g *game) loop() {
-	g.moveTo(position{g.h - 1, g.w - 1})
 	for t := time.NewTimer(time.Second / g.speed); ; t.Reset(time.Second / g.speed) {
 		select {
 		case <-g.restart:
@@ -235,6 +234,7 @@ func (g *game) start() {
 	g.printAllSnakes()
 	g.printAllFood()
 	go g.processInput()
+	g.moveTo(position{g.h - 1, g.w - 1})
 	g.loop()
 }
 
@@ -324,14 +324,7 @@ func (g *game) processInput() {
 		case '\'', '|':
 			changeDir(3, right)
 		case 't', 'T':
-			// selected needed here if this is waiting on pauseLoop,
-			// but pauseLoop is stuck in g.Lock() because its locked by captureSignals
-			// and that is blocked on sending to pauseInput
-			select {
-			case g.pauseLoop <- struct{}{}:
-			case <-g.pauseInput:
-				<-g.pauseInput
-			}
+			g.pauseLoop <- struct{}{}
 		case 'r', 'R':
 			select {
 			case g.restart <- struct{}{}:

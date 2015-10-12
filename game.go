@@ -53,7 +53,9 @@ func (g *game) captureSignals() {
 			}
 			g.Unlock()
 			g.pauseInput <- struct{}{}
-			syscall.Kill(syscall.Getpid(), syscall.SIGSTOP)
+			signal.Reset(syscall.SIGTSTP)
+			syscall.Kill(os.Getpid(), syscall.SIGTSTP)
+			signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGTSTP)
 			g.setTTY()
 			g.pauseInput <- struct{}{}
 			g.printGround()
@@ -472,7 +474,6 @@ func (g *game) cleanup() {
 	os.Stdin.WriteString(NORMAL + CURSORVIS)
 	// set tty to normal
 	writeTermios(g.oldTios)
-	os.Stdout.WriteString("\n")
 }
 
 func (g *game) setOrigin() {

@@ -43,15 +43,15 @@ func (g *game) captureSignals() {
 	go func() {
 		for {
 			s := <-g.sigs
+			g.cleanup()
+			if s.String() != syscall.SIGTSTP.String() {
+				os.Exit(0)
+			}
 			g.Lock()
 			if !g.pausedLoop {
 				g.pauseLoop <- struct{}{}
 			}
 			g.Unlock()
-			g.cleanup()
-			if s.String() != syscall.SIGTSTP.String() {
-				os.Exit(0)
-			}
 			g.pauseInput <- struct{}{}
 			syscall.Kill(syscall.Getpid(), syscall.SIGSTOP)
 			g.setTTY()
@@ -201,8 +201,8 @@ func (g *game) loop() {
 
 func (g *game) initialize() {
 	g.restart = make(chan struct{}, 1)
-	g.pauseLoop = make(chan struct{})
 	g.pauseInput = make(chan struct{}, 1)
+	g.pauseLoop = make(chan struct{})
 	g.s = make([]snake, g.players)
 	g.f = new(food)
 	g.f.p = make([]position, g.players)
@@ -256,12 +256,14 @@ func (g *game) processInput() {
 	b := make([]byte, 1)
 	read := func() {
 		for {
-			if _, err := os.Stdin.Read(b); err != nil {
+			select {
+			case <-g.pauseInput:
 				<-g.pauseInput
-				<-g.pauseInput
-				continue
+			default:
+				if _, err := os.Stdin.Read(b); err == nil {
+					return
+				}
 			}
-			break
 		}
 	}
 	changeDir := func(s uint16, dir uint16) {

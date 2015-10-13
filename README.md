@@ -1,4 +1,7 @@
 # juke
+
+#BEING COMPLETLY REDEVELOPED
+
 A terminal snake game in which the primary objective is to juke (basically dodge and attack other snakes) other players as well as get food to make yourself more long.
 
 **LINUX/OSX ONLY**
@@ -28,6 +31,10 @@ But you should be able to figure out most of it just by playing the game for lik
 <img src="https://raw.githubusercontent.com/nhooyr/juke/master/screenshot.png" border="0">
 
 ###TODO
+COMPLETE REDO OF DRAWING
+
+CLIENT/SERVER MODEL
+
 network multiplayer
 
 more powerups

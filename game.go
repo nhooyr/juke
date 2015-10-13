@@ -58,12 +58,12 @@ func (g *game) captureSignals() {
 			syscall.Kill(os.Getpid(), syscall.SIGTSTP)
 			signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGTSTP)
 			g.setTTY()
-			g.Unlock()
-			g.pauseInput <- struct{}{}
 			g.printGround()
 			g.printAllSnakes()
 			g.printAllFood()
 			g.moveTo(position{g.h - 1, g.w - 1})
+			g.Unlock()
+			g.pauseInput <- struct{}{}
 		}
 	}()
 }
@@ -151,7 +151,6 @@ Controls:
 	if g.speed == 0 {
 		log.Fatal("speed cannot be 0 units per second")
 	}
-
 }
 
 func (g *game) next() {

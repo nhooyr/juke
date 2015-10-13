@@ -39,6 +39,7 @@ type game struct {
 
 func (g *game) captureSignals() {
 	g.sigs = make(chan os.Signal)
+	g.pauseLoop = make(chan struct{})
 	signal.Notify(g.sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGTSTP)
 	go func() {
 		for {
@@ -207,7 +208,6 @@ func (g *game) loop() {
 func (g *game) initialize() {
 	g.restart = make(chan struct{}, 1)
 	g.pauseInput = make(chan struct{}, 1)
-	g.pauseLoop = make(chan struct{})
 	g.s = make([]*snake, g.players)
 	g.f = new(food)
 	g.f.p = make([]position, g.players)

@@ -35,6 +35,7 @@ type game struct {
 	pausedLoop bool
 	oldTios    syscall.Termios
 	sync.Mutex
+	speedM sync.Mutex
 }
 
 func (g *game) captureSignals() {
@@ -173,8 +174,14 @@ func (g *game) next() {
 	g.moveTo(position{g.h - 1, g.w - 1})
 }
 
+func (g *game) getSpeed() time.Duration {
+	g.speedM.Lock()
+	defer g.speedM.Unlock()
+	return g.speed
+}
+
 func (g *game) loop() {
-	for t := time.NewTimer(time.Second / g.speed); ; t.Reset(time.Second / g.speed) {
+	for t := time.NewTimer(time.Second / g.getSpeed()); ; t.Reset(time.Second / g.getSpeed()) {
 		select {
 		case <-g.restart:
 			g.next()
@@ -248,7 +255,7 @@ func (g *game) printGround() {
 			case x == 0 || x == g.w-1:
 				os.Stdout.WriteString("│")
 			default:
-				os.Stdout.WriteString(" ")
+				g.moveTo(position{y + g.rowOffSet, g.w - 1})
 			}
 		}
 		if y < g.h-1 {
@@ -275,7 +282,7 @@ func (g *game) processInput() {
 		}
 	}
 	changeDir := func(i uint16, d uint16) {
-		if g.players <= i || g.s[i].getDead() == true || g.s[i].getDir() == d {
+		if g.players <= i || g.s[i].getDead() == true {
 			return
 		}
 		g.s[i].setDir(d)
@@ -290,11 +297,8 @@ func (g *game) processInput() {
 				// handle shift arrow keys
 				case 91, 49, 59, 50:
 					continue
-				default:
-					switch dir := uint16(b - 65); dir {
-					case up, down, right, left:
-						changeDir(0, dir)
-					}
+				case 65, 67, 66, 68:
+					changeDir(0, uint16(b-65))
 				}
 				break
 			}
@@ -322,6 +326,18 @@ func (g *game) processInput() {
 			changeDir(3, left)
 		case '\'', '|':
 			changeDir(3, right)
+		case '=':
+			g.speedM.Lock()
+			g.speed = time.Duration(float64(g.speed+1) * 1.2)
+			g.speedM.Unlock()
+		case '-':
+			g.speedM.Lock()
+			if float64(g.speed)/1.2 < 1 {
+				g.speed = 1
+			} else {
+				g.speed = time.Duration(float64(g.speed) / 1.2)
+			}
+			g.speedM.Unlock()
 		case 't', 'T':
 			g.pauseLoop <- struct{}{}
 		case 'r', 'R':
@@ -330,7 +346,7 @@ func (g *game) processInput() {
 			default:
 				// already restarting
 			}
-		case 'q', 'Q':
+		case 'q', 'Q', 4:
 			g.sigs <- syscall.SIGTERM
 		}
 	}
@@ -482,8 +498,8 @@ func (g *game) cleanup() {
 
 func (g *game) setOrigin() {
 	os.Stdin.WriteString(CURSORPOS)
-	r := bufio.NewReader(os.Stdin)
 	//TODO FIX THIS with regex
+	r := bufio.NewReader(os.Stdin)
 	p, err := r.ReadString('R')
 	if err != nil {
 		panic(err)

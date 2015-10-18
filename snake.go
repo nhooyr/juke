@@ -174,12 +174,6 @@ func (s *snake) setDir(d uint16) {
 	s.bs[0].d = d
 }
 
-func (s *snake) getDir() uint16 {
-	s.bsm.RLock()
-	defer s.bsm.RUnlock()
-	return s.bs[0].d
-}
-
 func (s *snake) setBs(bs []block) {
 	s.bsm.Lock()
 	defer s.bsm.Unlock()

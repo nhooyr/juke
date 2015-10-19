@@ -202,7 +202,6 @@ func (g *game) loop() {
 		case <-t.C:
 			// next frame time
 		}
-		g.moveTo(position{1, 1})
 		g.moveSnakes()
 		g.checkCollisions()
 		g.updateSnakes()
@@ -409,7 +408,7 @@ func (g *game) checkCollisions() {
 				// elements are opposite dir and then check if i is on any
 				// of j's oldBs or if j is on any of i's oldBs
 				if g.s[j].on(g.s[i].bs[0].p, 0, len(g.s[j].bs), 1) ||
-					(len(g.s[i].bs) == 1 && oppositeDir(g.s[i].bs[0].d, g.s[j].bs[0].d) &&
+					(len(g.s[i].bs) == 1 && oppositeDir(g.s[i].getDir(), g.s[j].getDir()) &&
 						(g.s[i].on(g.s[j].oldBs[0].p, 0, len(g.s[i].bs), 1) ||
 							g.s[j].on(g.s[i].oldBs[0].p, 0, len(g.s[j].bs), 1))) {
 					g.s[i].die()

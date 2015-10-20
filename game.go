@@ -327,14 +327,14 @@ func (g *game) processInput() {
 			changeDir(3, right)
 		case '=':
 			g.speedM.Lock()
-			g.speed = time.Duration(float64(g.speed+1) * 1.2)
+			g.speed = time.Duration(float64(g.speed+1) * 1.1)
 			g.speedM.Unlock()
 		case '-':
 			g.speedM.Lock()
-			if float64(g.speed)/1.2 < 1 {
+			if float64(g.speed)/1.3 < 1 {
 				g.speed = 1
 			} else {
-				g.speed = time.Duration(float64(g.speed) / 1.2)
+				g.speed = time.Duration(float64(g.speed) / 1.3)
 			}
 			g.speedM.Unlock()
 		case 't', 'T':

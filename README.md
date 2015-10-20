@@ -42,3 +42,5 @@ more powerups
 documentation
 
 proper interface
+
+DOUBLE BUFFER

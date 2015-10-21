@@ -20,13 +20,13 @@ type block struct {
 func (b *block) moveBack() {
 	switch b.d {
 	case up:
-		b.p.y += 1
+		b.p.y++
 	case right:
-		b.p.x -= 1
+		b.p.x--
 	case down:
-		b.p.y -= 1
+		b.p.y++
 	case left:
-		b.p.x += 1
+		b.p.x--
 	}
 
 }
@@ -34,13 +34,13 @@ func (b *block) moveBack() {
 func (b *block) moveForward() {
 	switch b.d {
 	case up:
-		b.p.y -= 1
+		b.p.y--
 	case right:
-		b.p.x += 1
+		b.p.x++
 	case down:
-		b.p.y += 1
+		b.p.y++
 	case left:
-		b.p.x -= 1
+		b.p.x--
 	}
 }
 

@@ -31,16 +31,16 @@ But you should be able to figure out most of it just by playing the game for lik
 <img src="https://raw.githubusercontent.com/nhooyr/juke/master/screenshot.png" border="0">
 
 ###TODO
-COMPLETE REDO OF DRAWING
+* COMPLETE REDO OF DRAWING
 
-CLIENT/SERVER MODEL
+* CLIENT/SERVER MODEL
 
-network multiplayer
+* network multiplayer
 
-more powerups
+* more powerups
 
-documentation
+* documentation
 
-proper interface
+* proper interface
 
-DOUBLE BUFFER
+* DOUBLE BUFFER
